@@ -219,6 +219,7 @@
     <div class="app-name">🩺 Dr. Remédio</div>
     <button class="mute-btn" id="muteBtn" onclick="toggleMute()" aria-pressed="false">🔊 Voz: Ligada</button>
   </div>
+  <div id="alarmeBanner" style="display:none;background:var(--warn);color:#fff;padding:14px 16px;text-align:center;font-weight:800;font-size:15px;cursor:pointer;" onclick="this.style.display='none';">⏰ Hora do remédio</div>
 
   <main id="screens">
 
@@ -375,8 +376,8 @@
         <span class="field-label">Horários do dia</span>
         <div style="margin-top:4px;margin-bottom:12px;">
           <span class="toggle-chip" data-chipm="manha" onclick="toggleChipMed(this,'manha')">☀️ Manhã</span>
-          <span class="toggle-chip" data-chipm="tarde" onclick="toggleChipMed(this,'tarde')">🌤️ Tarde</span>
-          <span class="toggle-chip" data-chipm="noite" onclick="toggleChipMed(this,'noite')">🌙 Noite</span>
+          <span class="toggle-chip" data-chipm="tarde" onclick="toggleChipMed(this,'tarde')">🍽️ Tarde</span>
+          <span class="toggle-chip" data-chipm="noite" onclick="toggleChipMed(this,'noite')">🌙✨ Noite</span>
         </div>
         <span class="field-label">Duração do tratamento (em dias — deixe em branco se for contínuo)</span>
         <input type="number" id="medDias" class="field-input" min="0" placeholder="Ex: 7">
@@ -406,8 +407,8 @@
         <span class="field-label">Horários do dia</span>
         <div style="margin-top:4px;margin-bottom:12px;">
           <span class="toggle-chip" data-chipc="manha" onclick="toggleChipConf(this,'manha')">☀️ Manhã</span>
-          <span class="toggle-chip" data-chipc="tarde" onclick="toggleChipConf(this,'tarde')">🌤️ Tarde</span>
-          <span class="toggle-chip" data-chipc="noite" onclick="toggleChipConf(this,'noite')">🌙 Noite</span>
+          <span class="toggle-chip" data-chipc="tarde" onclick="toggleChipConf(this,'tarde')">🍽️ Tarde</span>
+          <span class="toggle-chip" data-chipc="noite" onclick="toggleChipConf(this,'noite')">🌙✨ Noite</span>
         </div>
         <span class="field-label">Duração do tratamento (em dias — deixe em branco se for contínuo)</span>
         <input type="number" id="confDias" class="field-input" min="0" placeholder="Ex: 7">
@@ -534,8 +535,8 @@
         <span class="field-label">Horários do dia (para o alarme)</span>
         <div style="margin-top:4px;">
           <span class="toggle-chip" data-chip="manha" onclick="toggleChip(this,'manha')">☀️ Manhã</span>
-          <span class="toggle-chip" data-chip="tarde" onclick="toggleChip(this,'tarde')">🌤️ Tarde</span>
-          <span class="toggle-chip" data-chip="noite" onclick="toggleChip(this,'noite')">🌙 Noite</span>
+          <span class="toggle-chip" data-chip="tarde" onclick="toggleChip(this,'tarde')">🍽️ Tarde</span>
+          <span class="toggle-chip" data-chip="noite" onclick="toggleChip(this,'noite')">🌙✨ Noite</span>
         </div>
       </div>
       <button class="big-btn primary" onclick="salvarAjusteFarmacia()">
@@ -586,6 +587,31 @@
       </button>
     </div>
 
+    <!-- REGISTRAR PRIMEIRO HORÁRIO -->
+    <div class="pane" data-pane="registrar-horario">
+      <div class="app-header"><h2>Primeiro Horário</h2></div>
+      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
+      <div class="result-card" style="text-align:center;">
+        <p class="med-name" id="regNomeRemedio">—</p>
+        <p class="med-sub" style="margin:0 0 18px;">Digite a hora que você tomou este remédio pela primeira vez. Use só números.</p>
+        <div style="display:flex;gap:10px;justify-content:center;align-items:flex-end;">
+          <div>
+            <span class="field-label" style="text-align:center;display:block;">Hora (0 a 23)</span>
+            <input type="number" id="regHora" class="field-input" style="width:110px;text-align:center;font-size:30px;font-weight:800;" min="0" max="23" placeholder="9">
+          </div>
+          <div style="font-size:30px;font-weight:800;padding-bottom:14px;">:</div>
+          <div>
+            <span class="field-label" style="text-align:center;display:block;">Minuto (0 a 59)</span>
+            <input type="number" id="regMinuto" class="field-input" style="width:110px;text-align:center;font-size:30px;font-weight:800;" min="0" max="59" placeholder="00">
+          </div>
+        </div>
+      </div>
+      <button class="big-btn primary" onclick="salvarPrimeiroHorario()">
+        <span class="emoji">✅</span> Confirmar Horário
+      </button>
+      <div class="footer-link" onclick="go('meus-remedios')">← Voltar</div>
+    </div>
+
     <!-- PRO HOME -->
     <div class="pane" data-pane="pro-home">
       <span class="badge-role">MODO PROFISSIONAL DE SAÚDE</span>
@@ -608,20 +634,28 @@
       <span class="badge-role">MODO PROFISSIONAL DE SAÚDE</span>
       <div class="app-header" style="text-align:left;margin-bottom:10px;">
         <h2 style="margin:0;">Gerar Cartão do Paciente</h2>
-        <p style="margin:6px 0 0;">Monte o cartão com pictogramas para o paciente levar, com ou sem celular.</p>
+        <p style="margin:6px 0 0;">Selecione os remédios já salvos neste aparelho, ou adicione um remédio avulso só para o cartão (útil quando o paciente não tem celular).</p>
       </div>
-      <p style="font-size:14px;font-weight:700;margin:8px 0 8px;">Selecione os horários:</p>
-      <div style="margin-bottom:12px;">
-        <span class="toggle-chip on">☀️ Manhã</span>
-        <span class="toggle-chip">🌤️ Tarde</span>
-        <span class="toggle-chip on">🌙 Noite</span>
-      </div>
+      <p style="font-size:14px;font-weight:700;margin:8px 0 8px;">Remédios salvos neste aparelho:</p>
+      <div id="listaCartaoSalvos"></div>
       <div class="result-card">
-        <p class="med-name" style="font-size:17px;">Losartana 50mg</p>
-        <p class="med-sub">1 comprimido — manhã e noite</p>
-        <p class="med-sub">🗓️ Duração: uso contínuo</p>
+        <p style="font-size:14px;font-weight:700;margin:0 0 8px;">Adicionar remédio avulso (só para este cartão):</p>
+        <span class="field-label">Nome do remédio</span>
+        <input type="text" id="cartaoAvulsoNome" class="field-input" placeholder="Digite o nome do remédio">
+        <span class="field-label">Dose</span>
+        <input type="text" id="cartaoAvulsoDose" class="field-input" placeholder="Ex: 1 comprimido" value="1 comprimido">
+        <span class="field-label">Horários do dia</span>
+        <div style="margin-top:4px;margin-bottom:12px;">
+          <span class="toggle-chip" data-chipa="manha" onclick="toggleChipAvulso(this,'manha')">☀️ Manhã</span>
+          <span class="toggle-chip" data-chipa="tarde" onclick="toggleChipAvulso(this,'tarde')">🍽️ Tarde</span>
+          <span class="toggle-chip" data-chipa="noite" onclick="toggleChipAvulso(this,'noite')">🌙✨ Noite</span>
+        </div>
+        <button class="big-btn outline" onclick="adicionarItemAvulsoCartao()">
+          <span class="emoji">➕</span> Adicionar à Lista do Cartão
+        </button>
       </div>
-      <button class="big-btn primary" onclick="go('pro-preview')">
+      <div id="listaCartaoAvulsos"></div>
+      <button class="big-btn primary" onclick="gerarCartaoPreview()">
         <span class="emoji">🖨️</span> Gerar Cartão para Imprimir
       </button>
       <div class="footer-link" onclick="go('pro-home')">← Voltar</div>
@@ -632,14 +666,13 @@
       <span class="badge-role">PRÉ-VISUALIZAÇÃO DO CARTÃO</span>
       <div class="print-preview">
         <h3 style="margin:0 0 12px;">Cartão do Paciente</h3>
-        <div class="row"><span style="font-size:30px;">☀️</span><b>Losartana 50mg — 1 comprimido</b></div>
-        <div class="row"><span style="font-size:30px;">🌙</span><b>Losartana 50mg — 1 comprimido</b></div>
+        <div id="previewCartaoConteudo"></div>
         <p style="font-size:13px;color:var(--muted);margin-top:12px;">Funciona mesmo sem celular — para entregar impresso.</p>
       </div>
       <button class="big-btn primary" onclick="window.print()">
         <span class="emoji">🖨️</span> Imprimir Agora
       </button>
-      <div class="footer-link" onclick="go('pro-home')">← Voltar</div>
+      <div class="footer-link" onclick="go('pro-cartao')">← Voltar</div>
     </div>
 
   </main>
@@ -657,6 +690,7 @@ let calendarioFalaAtual = '';
 
 const HORARIO_LABEL = { manha:'manhã', tarde:'tarde', noite:'noite' };
 const HORARIO_HORA = { manha:8, tarde:14, noite:20 };
+const HORARIO_EMOJI = { manha:'☀️', tarde:'🍽️', noite:'🌙✨' };
 
 /* ---------- Voz (Web Speech API) ---------- */
 let vozLigada = localStorage.getItem('vozLigada') !== 'false';
@@ -692,6 +726,12 @@ function go(paneId){
   if(target) target.classList.add('active');
   currentPane = paneId;
   if(paneId === 'meus-remedios') renderRemedios();
+  if(paneId === 'pro-cartao'){
+    itensCartaoAvulsos = [];
+    chipsAvulso = new Set();
+    renderCartaoSalvos();
+    renderCartaoAvulsos();
+  }
   if(paneId === 'duracao-tratamento'){
     const dias = currentMed.duracaoDias || 7;
     document.getElementById('btnDuracaoTemp').innerHTML = '<span class="emoji">📅</span> Por tempo determinado (' + dias + ' dias)';
@@ -781,10 +821,15 @@ function paneText(id){
       const nome = r ? r.nome : 'este remédio';
       return 'Tem certeza que quer excluir ' + nome + '? Isso não pode ser desfeito. Toque em sim, excluir, ou cancelar.';
     }
+    case 'registrar-horario': {
+      const r = indiceParaRegistrarHorario !== null ? getRemedios()[indiceParaRegistrarHorario] : null;
+      const nome = r ? r.nome : 'este remédio';
+      return 'Digite a hora que você tomou ' + nome + ' pela primeira vez. Use só números: primeiro a hora, de 0 a 23, depois os minutos, de 0 a 59. Depois toque em confirmar horário.';
+    }
     case 'pro-home':
       return 'Modo profissional de saúde. Escolha gerar cartão do paciente, ou modo farmácia.';
     case 'pro-cartao':
-      return 'Selecione os horários e gere o cartão do paciente para imprimir.';
+      return 'Selecione os remédios salvos que quer incluir no cartão, ou adicione um remédio avulso. Depois toque em gerar cartão para imprimir.';
     case 'pro-preview':
       return 'Pré visualização do cartão, pronto para imprimir.';
     default:
@@ -1074,13 +1119,49 @@ function gerarICS(med, dias){
     'END:VCALENDAR'
   ].join('\r\n');
 }
+function gerarICSHorarios(med, horariosHHMM, dias){
+  const now = new Date();
+  const eventos = horariosHHMM.map(hm => {
+    const [hh, mm] = hm.split(':').map(Number);
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0);
+    let rrule = 'FREQ=DAILY';
+    if(dias) rrule += ';COUNT=' + dias;
+    return [
+      'BEGIN:VEVENT',
+      'UID:' + start.getTime() + '-' + hm.replace(':','') + '@meuremedio.app',
+      'DTSTAMP:' + formatICSDate(now) + 'Z',
+      'DTSTART:' + formatICSDate(start),
+      'RRULE:' + rrule,
+      'SUMMARY:💊 Tomar ' + med.nome,
+      'DESCRIPTION:Lembrete criado pelo app Dr. Remédio (' + (med.dose||'') + ').',
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:Hora de tomar ' + med.nome,
+      'TRIGGER:-PT0M',
+      'END:VALARM',
+      'END:VEVENT'
+    ].join('\r\n');
+  }).join('\r\n');
+  return [
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Dr Remedio App//PT-BR','CALSCALE:GREGORIAN',
+    eventos,'END:VCALENDAR'
+  ].join('\r\n');
+}
+function diasRestantes(r){
+  if(!r.terminaEm) return null;
+  const hoje = new Date(hojeISO() + 'T00:00:00');
+  const fim = new Date(r.terminaEm + 'T00:00:00');
+  const diff = Math.round((fim - hoje) / 86400000);
+  return diff > 0 ? diff : 1;
+}
 function baixarICS(conteudo, nomeArquivo){
-  const blob = new Blob([conteudo], { type:'text/calendar' });
-  const url = URL.createObjectURL(blob);
+  // Usa data: URI em vez de blob: — o Safari do iPhone tem um problema conhecido em que
+  // arquivos .ics gerados via blob: às vezes não entregam para o app Calendário (falha silenciosa).
+  // data: URI é a alternativa documentada que funciona de forma mais confiável no iOS.
+  const dataUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(conteudo);
   const a = document.createElement('a');
-  a.href = url; a.download = nomeArquivo;
+  a.href = dataUri; a.download = nomeArquivo;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 function salvarRemedio(med){
@@ -1143,18 +1224,23 @@ function renderRemedios(){
     return;
   }
   container.innerHTML = lista.map((r, i) => {
-    const emoji = r.horarios && r.horarios.includes('noite') && !r.horarios.includes('manha') ? '🌙'
+    const emoji = r.horarios && r.horarios.includes('noite') && !r.horarios.includes('manha') ? '🌙✨'
       : r.horarios && r.horarios.length ? '☀️' : '💊';
     const concluido = tratamentoProvavelmenteConcluido(r);
     const avisoConcluido = concluido
       ? '<div style="font-size:12px;color:var(--warn);font-weight:700;margin-top:2px;">✅ Tratamento já deve ter terminado</div>' : '';
     const orientacaoTxt = r.orientacoes
       ? '<div style="font-size:12px;color:var(--accent);margin-top:2px;">📝 '+r.orientacoes+'</div>' : '';
+    const horariosCalcTxt = (r.horariosCalculados && r.horariosCalculados.length)
+      ? '<div style="font-size:12px;color:var(--brand-dark);font-weight:700;margin-top:2px;">⏰ '+r.horariosCalculados.join(', ')+'</div>' : '';
+    const btnRegistrar = (r.horarios && r.horarios.length)
+      ? '<button class="mini-listen" style="background:var(--accent);" onclick="pedirRegistroHorario('+i+')" aria-label="Registrar horário de '+r.nome+'">⏰</button>' : '';
     return '<div class="list-item" style="align-items:flex-start;'+(concluido ? 'border-color:#f1d38a;background:#fffaf0;' : '')+'">' +
       '<div class="pictogram" style="width:48px;height:48px;font-size:22px;">'+emoji+'</div>' +
-      '<div class="info"><div class="name">'+r.nome+'</div><div class="time">'+(r.dose||'')+' — '+(r.duracaoLabel||'')+'</div>'+orientacaoTxt+avisoConcluido+'</div>' +
+      '<div class="info"><div class="name">'+r.nome+'</div><div class="time">'+(r.dose||'')+' — '+(r.duracaoLabel||'')+'</div>'+horariosCalcTxt+orientacaoTxt+avisoConcluido+'</div>' +
       '<div style="display:flex;flex-direction:column;gap:8px;">' +
         '<button class="mini-listen" onclick="falarRemedio('+i+')" aria-label="Ouvir informações de '+r.nome+'">🔊</button>' +
+        btnRegistrar +
         '<button class="mini-listen" style="background:var(--warn);" onclick="pedirExclusao('+i+')" aria-label="Excluir '+r.nome+'">🗑️</button>' +
       '</div>' +
     '</div>';
@@ -1163,7 +1249,10 @@ function renderRemedios(){
 function falarRemedio(i){
   const r = getRemedios()[i];
   if(!r) return;
-  let fala = r.nome + '. ' + (r.dose||'') + '. ' + (r.duracaoLabel||'') + '. Horários: ' + horariosFalados(r.horarios) + '.';
+  let fala = r.nome + '. ' + (r.dose||'') + '. ' + (r.duracaoLabel||'') + '. ';
+  fala += (r.horariosCalculados && r.horariosCalculados.length)
+    ? ('Horários: ' + r.horariosCalculados.join(', ') + '.')
+    : ('Horários: ' + horariosFalados(r.horarios) + '.');
   if(r.orientacoes) fala += ' Orientação do médico: ' + r.orientacoes + '.';
   if(tratamentoProvavelmenteConcluido(r)) fala += ' Atenção: este tratamento já deve ter terminado. Você pode excluir se quiser.';
   falar(fala);
@@ -1190,6 +1279,121 @@ function confirmarExclusao(){
 function cancelarExclusao(){
   indiceParaExcluir = null;
   go('meus-remedios');
+}
+
+/* ---------- Registrar primeiro horário (calcula frequência) ---------- */
+let indiceParaRegistrarHorario = null;
+function pedirRegistroHorario(i){
+  const r = getRemedios()[i];
+  if(!r) return;
+  indiceParaRegistrarHorario = i;
+  document.getElementById('regNomeRemedio').textContent = r.nome;
+  document.getElementById('regHora').value = r.primeiroHorario ? r.primeiroHorario.hora : '';
+  document.getElementById('regMinuto').value = r.primeiroHorario ? r.primeiroHorario.minuto : '';
+  go('registrar-horario');
+}
+function salvarPrimeiroHorario(){
+  if(indiceParaRegistrarHorario === null){ go('meus-remedios'); return; }
+  const hora = parseInt(document.getElementById('regHora').value, 10);
+  const minuto = parseInt(document.getElementById('regMinuto').value, 10);
+  if(isNaN(hora) || hora < 0 || hora > 23 || isNaN(minuto) || minuto < 0 || minuto > 59){
+    falar('Horário inválido. Digite um número de 0 a 23 para a hora, e de 0 a 59 para os minutos.');
+    return;
+  }
+  const lista = getRemedios();
+  const r = lista[indiceParaRegistrarHorario];
+  if(!r){ go('meus-remedios'); return; }
+  const n = (r.horarios && r.horarios.length) ? r.horarios.length : 1;
+  const intervaloMin = Math.round((24 * 60) / n);
+  const totalMin = hora * 60 + minuto;
+  const horariosCalc = [];
+  for(let i = 0; i < n; i++){
+    const m = (totalMin + i * intervaloMin) % (24 * 60);
+    horariosCalc.push(pad(Math.floor(m / 60)) + ':' + pad(m % 60));
+  }
+  r.primeiroHorario = { hora, minuto };
+  r.horariosCalculados = horariosCalc;
+  localStorage.setItem('meusRemedios', JSON.stringify(lista));
+
+  const ics = gerarICSHorarios(r, horariosCalc, diasRestantes(r));
+  baixarICS(ics, (r.nome || 'remedio').replace(/\s+/g,'_') + '_horarios.ics');
+
+  falar('Horário registrado. Próximos horários de ' + r.nome + ': ' + horariosCalc.join(', ') + '. Um novo lembrete de calendário foi baixado.');
+  indiceParaRegistrarHorario = null;
+  go('meus-remedios');
+}
+
+/* ---------- Modo Profissional: Cartão do Paciente ---------- */
+let itensCartaoAvulsos = [];
+let chipsAvulso = new Set();
+function renderCartaoSalvos(){
+  const lista = getRemedios();
+  const container = document.getElementById('listaCartaoSalvos');
+  if(!lista.length){
+    container.innerHTML = '<p class="med-sub" style="margin:0 0 14px;">Nenhum remédio salvo neste aparelho ainda. Você pode adicionar um remédio avulso abaixo, só para este cartão.</p>';
+    return;
+  }
+  container.innerHTML = lista.map((r, i) => {
+    const emoji = r.horarios && r.horarios.includes('noite') && !r.horarios.includes('manha') ? '🌙✨'
+      : r.horarios && r.horarios.length ? '☀️' : '💊';
+    return '<label class="list-item" style="cursor:pointer;">' +
+      '<input type="checkbox" class="chk-cartao-salvo" data-idx="'+i+'" checked style="width:22px;height:22px;flex-shrink:0;">' +
+      '<div class="pictogram" style="width:40px;height:40px;font-size:18px;">'+emoji+'</div>' +
+      '<div class="info"><div class="name">'+r.nome+'</div><div class="time">'+(r.dose||'')+' — '+(r.duracaoLabel||'')+'</div></div>' +
+    '</label>';
+  }).join('');
+}
+function toggleChipAvulso(el, valor){
+  el.classList.toggle('on');
+  if(chipsAvulso.has(valor)) chipsAvulso.delete(valor);
+  else chipsAvulso.add(valor);
+}
+function adicionarItemAvulsoCartao(){
+  const nome = document.getElementById('cartaoAvulsoNome').value.trim();
+  if(!nome){ falar('Digite o nome do remédio antes de adicionar.'); return; }
+  const dose = document.getElementById('cartaoAvulsoDose').value.trim() || '1 comprimido';
+  itensCartaoAvulsos.push({ nome, dose, horarios: Array.from(chipsAvulso) });
+  document.getElementById('cartaoAvulsoNome').value = '';
+  document.getElementById('cartaoAvulsoDose').value = '1 comprimido';
+  chipsAvulso = new Set();
+  document.querySelectorAll('[data-pane="pro-cartao"] [data-chipa]').forEach(chip => chip.classList.remove('on'));
+  renderCartaoAvulsos();
+  falar(nome + ' adicionado à lista do cartão.');
+}
+function removerItemAvulsoCartao(i){
+  itensCartaoAvulsos.splice(i, 1);
+  renderCartaoAvulsos();
+}
+function renderCartaoAvulsos(){
+  const container = document.getElementById('listaCartaoAvulsos');
+  if(!itensCartaoAvulsos.length){ container.innerHTML = ''; return; }
+  container.innerHTML = itensCartaoAvulsos.map((it, i) => {
+    return '<div class="list-item">' +
+      '<div class="info"><div class="name">'+it.nome+'</div><div class="time">'+(it.dose||'')+'</div></div>' +
+      '<button class="mini-listen" style="background:var(--warn);" onclick="removerItemAvulsoCartao('+i+')" aria-label="Remover '+it.nome+'">🗑️</button>' +
+    '</div>';
+  }).join('');
+}
+function gerarCartaoPreview(){
+  const salvos = getRemedios();
+  const selecionados = Array.from(document.querySelectorAll('.chk-cartao-salvo:checked'))
+    .map(chk => salvos[parseInt(chk.getAttribute('data-idx'), 10)])
+    .filter(Boolean);
+  const todosItens = selecionados.concat(itensCartaoAvulsos);
+  if(!todosItens.length){
+    falar('Selecione ao menos um remédio salvo, ou adicione um remédio avulso, antes de gerar o cartão.');
+    return;
+  }
+  const linhas = [];
+  todosItens.forEach(it => {
+    const horarios = (it.horarios && it.horarios.length) ? it.horarios : ['manha'];
+    horarios.forEach(h => {
+      const emoji = HORARIO_EMOJI[h] || '💊';
+      linhas.push('<div class="row"><span style="font-size:30px;">'+emoji+'</span><b>'+it.nome+' — '+(it.dose||'')+'</b></div>');
+    });
+  });
+  document.getElementById('previewCartaoConteudo').innerHTML = linhas.join('');
+  go('pro-preview');
 }
 
 /* ---------- Termo de Uso ---------- */
@@ -1228,6 +1432,64 @@ function verTermos(){
   go('termos');
 }
 
+/* ---------- Alarme enquanto o app está aberto (complemento ao lembrete de calendário) ---------- */
+/* Não substitui o .ics — só funciona com o app aberto e a tela ligada. */
+let audioCtxAlarme = null;
+let alertasTocadosHoje = new Set();
+function getAudioCtxAlarme(){
+  try{
+    if(!audioCtxAlarme) audioCtxAlarme = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtxAlarme.state === 'suspended') audioCtxAlarme.resume();
+    return audioCtxAlarme;
+  } catch(e){ return null; }
+}
+function tocarAlarmeSonoro(){
+  const ctx = getAudioCtxAlarme();
+  if(!ctx) return;
+  try{
+    [0, 0.5, 1.0].forEach(tempo => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + tempo);
+      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + tempo + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + tempo + 0.35);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + tempo);
+      osc.stop(ctx.currentTime + tempo + 0.4);
+    });
+  } catch(e){}
+}
+function mostrarBannerAlarme(texto){
+  const banner = document.getElementById('alarmeBanner');
+  if(!banner) return;
+  banner.textContent = '⏰ ' + texto;
+  banner.style.display = 'block';
+  setTimeout(() => { banner.style.display = 'none'; }, 15000);
+}
+function checarAlarmesAbertos(){
+  if(localStorage.getItem('termosAceitos') !== 'true') return;
+  const agora = new Date();
+  const hhmmAtual = pad(agora.getHours()) + ':' + pad(agora.getMinutes());
+  const hojeStr = hojeISO();
+  getRemedios().forEach(r => {
+    if(tratamentoProvavelmenteConcluido(r)) return;
+    const horariosAlvo = (r.horariosCalculados && r.horariosCalculados.length)
+      ? r.horariosCalculados
+      : (r.horarios && r.horarios.length ? r.horarios.map(h => pad(HORARIO_HORA[h] ?? 8) + ':00') : []);
+    horariosAlvo.forEach(hm => {
+      if(hm !== hhmmAtual) return;
+      const chave = hojeStr + '_' + r.nome + '_' + hm;
+      if(alertasTocadosHoje.has(chave)) return;
+      alertasTocadosHoje.add(chave);
+      tocarAlarmeSonoro();
+      mostrarBannerAlarme('Hora de tomar ' + r.nome);
+      falar('Hora de tomar ' + r.nome + '. ' + (r.dose || '') + '.');
+    });
+  });
+}
+
 /* ---------- Inicialização ---------- */
 atualizarBotaoMudo();
 preencherTermoCompleto();
@@ -1238,6 +1500,8 @@ if(localStorage.getItem('termosAceitos') === 'true'){
   document.getElementById('linkFecharTermos').style.display = 'none';
   go('termos');
 }
+
+setInterval(checarAlarmesAbertos, 20000);
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
