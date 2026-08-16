@@ -44,6 +44,7 @@
     align-items:center;
     justify-content:space-between;
     padding:14px 16px;
+    padding-top:calc(14px + env(safe-area-inset-top));
     background:var(--brand);
     color:#fff;
     position:sticky;
@@ -314,27 +315,54 @@
       </div>
     </div>
 
+    <!-- CONFIRMAR LEITURA (OCR) -->
+    <div class="pane" data-pane="confirmar-leitura">
+      <div class="app-header"><h2 id="tituloConfirmar">Confira o que eu li</h2></div>
+      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
+      <div class="result-card">
+        <p class="med-sub" style="margin:0 0 8px;"><b>Texto que reconheci na foto:</b></p>
+        <div style="max-height:130px;overflow:auto;background:var(--bg);border-radius:12px;padding:10px;font-size:13px;color:var(--muted);white-space:pre-wrap;line-height:1.5;" id="textoOcrBruto">—</div>
+      </div>
+      <p class="med-sub" id="avisoOcr" style="margin:0 0 12px;"></p>
+      <div class="result-card">
+        <span class="field-label">Nome do remédio</span>
+        <input type="text" id="confNome" class="field-input" placeholder="Digite o nome do remédio">
+        <span class="field-label">Dose</span>
+        <input type="text" id="confDose" class="field-input" placeholder="Ex: 1 comprimido">
+        <span class="field-label">Horário (texto livre, opcional)</span>
+        <input type="text" id="confHorarioTexto" class="field-input" placeholder="Ex: de 8 em 8 horas">
+        <span class="field-label">Horários do dia</span>
+        <div style="margin-top:4px;margin-bottom:12px;">
+          <span class="toggle-chip" data-chipc="manha" onclick="toggleChipConf(this,'manha')">☀️ Manhã</span>
+          <span class="toggle-chip" data-chipc="tarde" onclick="toggleChipConf(this,'tarde')">🌤️ Tarde</span>
+          <span class="toggle-chip" data-chipc="noite" onclick="toggleChipConf(this,'noite')">🌙 Noite</span>
+        </div>
+        <span class="field-label">Duração do tratamento (em dias — deixe em branco se for contínuo)</span>
+        <input type="number" id="confDias" class="field-input" min="0" placeholder="Ex: 7">
+      </div>
+      <button class="big-btn outline" onclick="ouvirTextoOcr()">
+        <span class="emoji">🔊</span> Ouvir Texto Lido de Novo
+      </button>
+      <button class="big-btn primary" onclick="confirmarLeitura()">
+        <span class="emoji">✅</span> Está Certo, Continuar
+      </button>
+      <div class="footer-link" onclick="go('home')">← Início</div>
+    </div>
+
     <!-- RECEITA: RESULTADO -->
     <div class="pane" data-pane="receita-resultado">
-      <div class="app-header"><h2>Encontrei isto na receita</h2></div>
+      <div class="app-header"><h2>Confirmado</h2></div>
       <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
       <div class="result-card">
         <div class="pill-row">
-          <div class="pictogram">☀️</div>
+          <div class="pictogram" id="resPictograma">☀️</div>
           <div>
-            <p class="med-name">Losartana 50mg</p>
-            <p class="med-sub">1 comprimido — de manhã</p>
-          </div>
-        </div>
-        <div class="pill-row">
-          <div class="pictogram">🌙</div>
-          <div>
-            <p class="med-name">Losartana 50mg</p>
-            <p class="med-sub">1 comprimido — à noite</p>
+            <p class="med-name" id="resNome">—</p>
+            <p class="med-sub" id="resDoseHorario">—</p>
           </div>
         </div>
         <div class="divider"></div>
-        <p class="med-sub" style="margin:0;">🗓️ Duração detectada na receita: <b>7 dias</b> (confirme na próxima tela)</p>
+        <p class="med-sub" style="margin:0;" id="resDuracaoTxt">🗓️ Duração: —</p>
       </div>
       <div class="result-card" id="medicoCard" style="display:none;">
         <p class="med-sub" style="margin:0;">👨‍⚕️ Receita de <b id="medicoNome"></b> — CRM <span id="medicoCrm"></span></p>
@@ -424,8 +452,8 @@
         <div class="pill-row">
           <div class="pictogram">💊</div>
           <div>
-            <p class="med-name">Paracetamol 750mg</p>
-            <p class="med-sub">Analgésico e antitérmico</p>
+            <p class="med-name" id="caixaResNome">—</p>
+            <p class="med-sub" id="caixaResSub">—</p>
           </div>
         </div>
         <div class="divider"></div>
@@ -571,6 +599,7 @@
 
 <div aria-live="polite" class="sr-only" id="liveRegion"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 /* ---------- Estado ---------- */
 let currentPane = 'home';
@@ -655,9 +684,18 @@ function paneText(id){
     case 'receita-qr':
       return 'Aponte a câmera para o QR code da receita e toque no quadro escuro para escanear.';
     case 'receita-loading':
-      return 'Um momento, estou lendo sua receita.';
+      return 'Um momento, estou lendo o texto da receita. Isso pode levar alguns segundos.';
+    case 'confirmar-leitura': {
+      let fala = ocrTextoAtual
+        ? ('Veja o texto que eu consegui ler: ' + ocrTextoAtual + '.')
+        : 'Não consegui reconhecer nenhum texto nesta foto.';
+      fala += ' Confira os campos abaixo, corrija o que precisar, e toque em está certo, continuar.';
+      return fala;
+    }
     case 'receita-resultado': {
-      let fala = 'Encontrei isto na receita. Losartana, 50 miligramas. 1 comprimido de manhã, e 1 comprimido à noite. Duração detectada: sete dias.';
+      let fala = 'Confirmado. ' + (currentMed.nome||'Remédio') + '. ' + (currentMed.dose||'') + '. ' +
+        (currentMed.horarioTextoLivre || horariosFalados(currentMed.horarios)) + '.';
+      fala += currentMed.duracaoDias ? (' Duração: ' + currentMed.duracaoDias + ' dias.') : ' Duração contínua ou não detectada — confirme na próxima tela.';
       if(currentMed.medico){
         fala += ' Receita de ' + currentMed.medico.nome + ', C R M ' + currentMed.medico.crm + '.';
       }
@@ -673,9 +711,9 @@ function paneText(id){
     case 'caixa-camera':
       return 'Aponte a câmera para o código de barras da caixa e toque no quadro escuro para tirar a foto.';
     case 'caixa-loading':
-      return 'Um momento, estou identificando o remédio na base da Anvisa.';
+      return 'Um momento, estou lendo o texto da caixa do remédio. Isso pode levar alguns segundos.';
     case 'caixa-resultado':
-      return 'Remédio identificado. Paracetamol, 750 miligramas. Analgésico e antitérmico. Tome somente com orientação, e consulte sempre o horário indicado.';
+      return 'Remédio identificado: ' + (currentMed.nome||'') + '. ' + (currentMed.dose||'') + '. Tome somente com orientação, e consulte sempre o horário indicado por seu médico ou farmacêutico.';
     case 'caixa-ajustar':
       return 'Ajuste a dose e o horário conforme a receita, diferente da bula padrão. Depois toque em salvar ajuste.';
     case 'auth-farmacia':
@@ -709,26 +747,150 @@ function atualizarCardMedico(){
     card.style.display = 'none';
   }
 }
-function onFotoReceita(){
-  currentMed = { nome:'Losartana 50mg', dose:'1 comprimido', horarios:['manha','noite'], origem:'Receita (foto)', duracaoDetectadaFala:'sete dias', duracaoDias:7, medico:null };
+
+/* ---------- OCR real (Tesseract.js) ---------- */
+let ocrTextoAtual = '';
+let origemLeitura = 'receita'; // 'receita' | 'caixa' | 'qr'
+let chipsConfirmar = new Set();
+
+async function reconhecerTexto(file){
+  if(!file || typeof Tesseract === 'undefined'){
+    return { ok:false, texto:'' };
+  }
+  try{
+    const resultado = await Tesseract.recognize(file, 'por');
+    const texto = (resultado && resultado.data && resultado.data.text || '').trim();
+    return { ok: texto.length > 0, texto };
+  } catch(e){
+    return { ok:false, texto:'' };
+  }
+}
+
+function parseTextoReceita(texto){
+  const t = texto || '';
+  const linhas = t.split('\n').map(l => l.trim()).filter(Boolean);
+  const resultado = { nome:'', dose:'1 comprimido', horarios:[], dias:null };
+  for(const linha of linhas){
+    const mNome = linha.match(/([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,30}?)\s*(\d+\s?mg|\d+\s?g|\d+\s?ml)/i);
+    if(mNome){ resultado.nome = (mNome[1].trim() + ' ' + mNome[2].replace(/\s+/g,'')).trim(); break; }
+  }
+  const mDose = t.match(/(\d+\/?\d*)\s*comprimido[s]?/i);
+  if(mDose) resultado.dose = mDose[0];
+  const mDias = t.match(/por\s+(\d{1,3})\s*dias?/i);
+  if(mDias) resultado.dias = parseInt(mDias[1], 10);
+  const low = t.toLowerCase();
+  if(low.includes('manh')) resultado.horarios.push('manha');
+  if(low.includes('tarde')) resultado.horarios.push('tarde');
+  if(low.includes('noite')) resultado.horarios.push('noite');
+  if(!resultado.horarios.length) resultado.horarios.push('manha');
+  return resultado;
+}
+function parseTextoCaixa(texto){
+  const linhas = (texto || '').split('\n').map(l => l.trim()).filter(Boolean);
+  const resultado = { nome:'' };
+  for(const linha of linhas){
+    const mNome = linha.match(/([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,30}?)\s*(\d+\s?mg|\d+\s?g|\d+\s?ml)/i);
+    if(mNome){ resultado.nome = (mNome[1].trim() + ' ' + mNome[2].replace(/\s+/g,'')).trim(); break; }
+  }
+  if(!resultado.nome) resultado.nome = linhas[0] || '';
+  return resultado;
+}
+
+function abrirConfirmarLeitura(ok, avisoTexto){
+  document.getElementById('tituloConfirmar').textContent = origemLeitura === 'caixa' ? 'Confira o remédio' : 'Confira a receita';
+  document.getElementById('textoOcrBruto').textContent = ocrTextoAtual || 'Não consegui reconhecer nenhum texto nesta foto. Digite as informações manualmente abaixo.';
+  document.getElementById('avisoOcr').textContent = !ok
+    ? ('⚠️ ' + (avisoTexto || 'Não consegui ler automaticamente. Confira e preencha os campos com atenção antes de continuar.'))
+    : '✅ Confira se está tudo certo antes de continuar — corrija qualquer campo se precisar.';
+  document.getElementById('confNome').value = currentMed.nome || '';
+  document.getElementById('confDose').value = currentMed.dose || '';
+  document.getElementById('confHorarioTexto').value = currentMed.horarioTextoLivre || '';
+  document.getElementById('confDias').value = currentMed.duracaoDias || '';
+  chipsConfirmar = new Set(currentMed.horarios || []);
+  document.querySelectorAll('[data-pane="confirmar-leitura"] .toggle-chip').forEach(chip => {
+    chip.classList.toggle('on', chipsConfirmar.has(chip.getAttribute('data-chipc')));
+  });
+  go('confirmar-leitura');
+}
+function toggleChipConf(el, valor){
+  el.classList.toggle('on');
+  if(chipsConfirmar.has(valor)) chipsConfirmar.delete(valor);
+  else chipsConfirmar.add(valor);
+}
+function ouvirTextoOcr(){
+  falar(ocrTextoAtual ? ('Texto reconhecido: ' + ocrTextoAtual) : 'Não consegui reconhecer nenhum texto nesta foto.');
+}
+function atualizarResultadoReceita(){
+  document.getElementById('resNome').textContent = currentMed.nome || 'Remédio';
+  const horarioTxt = currentMed.horarioTextoLivre || horariosFalados(currentMed.horarios);
+  document.getElementById('resDoseHorario').textContent = (currentMed.dose||'') + ' — ' + horarioTxt;
+  document.getElementById('resPictograma').textContent =
+    (currentMed.horarios||[]).includes('noite') && !(currentMed.horarios||[]).includes('manha') ? '🌙' : '☀️';
+  document.getElementById('resDuracaoTxt').textContent = '🗓️ Duração: ' +
+    (currentMed.duracaoDias ? (currentMed.duracaoDias + ' dias') : 'contínuo ou não detectada — confirme na próxima tela');
+}
+function atualizarCaixaResultado(){
+  document.getElementById('caixaResNome').textContent = currentMed.nome || 'Remédio';
+  document.getElementById('caixaResSub').textContent = currentMed.dose || 'Confirme a dose com a bula ou farmacêutico';
+}
+function confirmarLeitura(){
+  const nome = document.getElementById('confNome').value.trim() || 'Remédio';
+  const dose = document.getElementById('confDose').value.trim() || '1 comprimido';
+  const horarioTextoLivre = document.getElementById('confHorarioTexto').value.trim();
+  const diasStr = document.getElementById('confDias').value.trim();
+  const dias = diasStr ? parseInt(diasStr, 10) : null;
+  currentMed = Object.assign({}, currentMed, {
+    nome, dose, horarioTextoLivre,
+    horarios: Array.from(chipsConfirmar),
+    duracaoDias: dias
+  });
+  if(origemLeitura === 'caixa'){
+    atualizarCaixaResultado();
+    go('caixa-resultado');
+  } else {
+    atualizarCardMedico();
+    atualizarResultadoReceita();
+    go('receita-resultado');
+  }
+}
+
+async function onFotoReceita(){
+  const file = document.getElementById('fotoReceita').files[0];
+  origemLeitura = 'receita';
   go('receita-loading');
-  setTimeout(() => { atualizarCardMedico(); go('receita-resultado'); }, 1400);
+  const r = await reconhecerTexto(file);
+  ocrTextoAtual = r.texto;
+  const guess = parseTextoReceita(ocrTextoAtual);
+  currentMed = {
+    nome: guess.nome, dose: guess.dose, horarios: guess.horarios,
+    origem:'Receita (foto)', duracaoDias: guess.dias || 7, medico:null
+  };
+  abrirConfirmarLeitura(r.ok);
 }
 function onQRReceita(){
+  origemLeitura = 'qr';
+  ocrTextoAtual = '';
   currentMed = {
     nome:'Losartana 50mg', dose:'1 comprimido', horarios:['manha','noite'], origem:'QR Code (Receita Memed)',
-    duracaoDetectadaFala:'sete dias', duracaoDias:7,
+    duracaoDias:7,
     medico:{ nome:'Dra. Ana Souza', crm:'12345-SP' }
   };
   go('receita-loading');
-  setTimeout(() => { atualizarCardMedico(); go('receita-resultado'); }, 1400);
+  setTimeout(() => {
+    abrirConfirmarLeitura(false, 'A leitura automática do QR Code da Memed ainda está em desenvolvimento — estes são dados de exemplo. Confira e corrija com o paciente antes de continuar.');
+  }, 700);
 }
 
 /* ---------- Fluxo Caixa ---------- */
-function onFotoCaixa(){
-  currentMed = { nome:'Paracetamol 750mg', dose:'1 comprimido', horarios:[], origem:'Caixa do remédio (código de barras)', duracaoDetectadaFala:'não detectada', duracaoDias:null };
+async function onFotoCaixa(){
+  const file = document.getElementById('fotoCaixa').files[0];
+  origemLeitura = 'caixa';
   go('caixa-loading');
-  setTimeout(() => go('caixa-resultado'), 1400);
+  const r = await reconhecerTexto(file);
+  ocrTextoAtual = r.texto;
+  const guess = parseTextoCaixa(ocrTextoAtual);
+  currentMed = { nome: guess.nome, dose:'1 comprimido', horarios:[], origem:'Caixa do remédio (foto)', duracaoDias:null, medico:null };
+  abrirConfirmarLeitura(r.ok);
 }
 
 /* ---------- Modo Farmácia ---------- */
