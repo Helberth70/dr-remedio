@@ -242,7 +242,7 @@
       </button>
       <p class="med-sub" style="text-align:center;margin-top:-6px;">Para médicos, farmacêuticos e estudantes de saúde</p>
       <div class="footer-link" onclick="verTermos()">Termo de Uso e Privacidade</div>
-      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px;">Versão 2026.1.13</p>
+      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px;">Versão 2026.1.14</p>
     </div>
 
     <!-- TERMO DE USO -->
@@ -568,6 +568,16 @@
         <h2 style="margin:0;">Gerar Cartão do Paciente</h2>
         <p style="margin:6px 0 0;">Selecione os remédios já salvos neste aparelho, ou adicione um remédio avulso só para o cartão (útil quando o paciente não tem celular).</p>
       </div>
+      <div class="result-card">
+        <p style="font-size:14px;font-weight:700;margin:0 0 8px;">Confirme para quem é este cartão (obrigatório sempre, mesmo em outro celular ou computador):</p>
+        <span class="field-label">Nome completo do paciente (nome e sobrenome) *</span>
+        <input type="text" id="cartaoPacienteNome" class="field-input" placeholder="Digite o nome e sobrenome do paciente">
+        <span class="field-label">Nome completo do médico(a) responsável (nome e sobrenome) *</span>
+        <input type="text" id="cartaoMedicoNome" class="field-input" placeholder="Digite o nome e sobrenome do médico">
+        <span class="field-label">CRM (opcional)</span>
+        <input type="text" id="cartaoMedicoCrm" class="field-input" placeholder="Ex: 12345-SP">
+        <p class="med-sub" style="margin:8px 0 0;color:var(--warn);" id="erroCartaoCabecalho"></p>
+      </div>
       <p style="font-size:14px;font-weight:700;margin:8px 0 8px;">Remédios salvos neste aparelho:</p>
       <div id="listaCartaoSalvos"></div>
       <div class="result-card">
@@ -581,6 +591,16 @@
           <span class="toggle-chip" data-chipa="manha" onclick="toggleChipAvulso(this,'manha')">☀️ Manhã</span>
           <span class="toggle-chip" data-chipa="tarde" onclick="toggleChipAvulso(this,'tarde')">🍽️ Tarde</span>
           <span class="toggle-chip" data-chipa="noite" onclick="toggleChipAvulso(this,'noite')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.15em" aria-hidden="true"><path fill="#2563eb" d="M12.7 3.3c-4.4.6-7.8 4.4-7.8 9 0 5 4.1 9.1 9.1 9.1 3.1 0 5.9-1.6 7.5-4-.7.2-1.5.3-2.3.3-5 0-9.1-4.1-9.1-9.1 0-1.9.6-3.7 1.6-5.3z"></path><path fill="#2563eb" d="M18.6 4.1l.5 1.4 1.4.5-1.4.5-.5 1.4-.5-1.4-1.4-.5 1.4-.5z"></path><path fill="#2563eb" d="M20.6 9.6l.35.9.9.35-.9.35-.35.9-.35-.9-.9-.35.9-.35z"></path></svg> Noite</span>
+        </div>
+        <span class="field-label">Duração</span>
+        <div style="margin-top:4px;margin-bottom:8px;">
+          <span class="toggle-chip" data-durav="temp" onclick="selecionarDuracaoAvulso('temp')">📅 Por tempo determinado</span>
+          <span class="toggle-chip" data-durav="continuo" onclick="selecionarDuracaoAvulso('continuo')">♾️ Contínuo</span>
+          <span class="toggle-chip" data-durav="sos" onclick="selecionarDuracaoAvulso('sos')">🤒 Se necessário</span>
+        </div>
+        <div id="blocoDiasAvulso" style="display:none;">
+          <span class="field-label">Por quantos dias?</span>
+          <input type="number" id="cartaoAvulsoDias" class="field-input" min="1" placeholder="Ex: 7" style="margin-bottom:12px;">
         </div>
         <button class="big-btn outline" onclick="adicionarItemAvulsoCartao()">
           <span class="emoji">➕</span> Adicionar à Lista do Cartão
@@ -598,6 +618,7 @@
       <span class="badge-role">PRÉ-VISUALIZAÇÃO DO CARTÃO</span>
       <div class="print-preview">
         <h3 style="margin:0 0 12px;">Cartão do Paciente</h3>
+        <div id="previewCartaoCabecalho" style="text-align:left;margin:0 0 14px;font-size:14px;line-height:1.6;"></div>
         <div id="previewCartaoConteudo"></div>
         <p style="font-size:13px;color:var(--muted);margin-top:12px;">Funciona mesmo sem celular — para entregar impresso.</p>
       </div>
@@ -692,6 +713,13 @@ function go(paneId){
   if(paneId === 'pro-cartao'){
     itensCartaoAvulsos = [];
     chipsAvulso = new Set();
+    duracaoAvulsoTipo = 'continuo';
+    document.getElementById('cartaoPacienteNome').value = receitaContexto.paciente || '';
+    document.getElementById('cartaoMedicoNome').value = (receitaContexto.medico && receitaContexto.medico.nome) || '';
+    document.getElementById('cartaoMedicoCrm').value = (receitaContexto.medico && receitaContexto.medico.crm) || '';
+    document.getElementById('erroCartaoCabecalho').textContent = '';
+    document.querySelectorAll('[data-pane="pro-cartao"] [data-durav]').forEach(chip => chip.classList.remove('on'));
+    document.getElementById('blocoDiasAvulso').style.display = 'none';
     renderCartaoSalvos();
     renderCartaoAvulsos();
   }
@@ -777,7 +805,7 @@ function paneText(id){
     case 'pro-home':
       return 'Modo profissional de saúde. Escolha gerar cartão do paciente, ou modo farmácia.';
     case 'pro-cartao':
-      return 'Selecione os remédios salvos que quer incluir no cartão, ou adicione um remédio avulso. Depois toque em gerar cartão para imprimir.';
+      return 'Confirme o nome completo do paciente e do médico responsável. Depois selecione os remédios salvos que quer incluir no cartão, ou adicione um remédio avulso, e toque em gerar cartão para imprimir.';
     case 'pro-preview':
       return 'Pré visualização do cartão, pronto para imprimir.';
     default:
@@ -1387,6 +1415,20 @@ function salvarPrimeiroHorario(){
 /* ---------- Modo Profissional: Cartão do Paciente ---------- */
 let itensCartaoAvulsos = [];
 let chipsAvulso = new Set();
+let duracaoAvulsoTipo = 'continuo';
+function selecionarDuracaoAvulso(tipo){
+  duracaoAvulsoTipo = tipo;
+  document.querySelectorAll('[data-pane="pro-cartao"] [data-durav]').forEach(chip => {
+    chip.classList.toggle('on', chip.getAttribute('data-durav') === tipo);
+  });
+  document.getElementById('blocoDiasAvulso').style.display = (tipo === 'temp') ? 'block' : 'none';
+}
+function formatDataBR(iso){
+  if(!iso) return '';
+  const partes = iso.split('-');
+  if(partes.length !== 3) return iso;
+  return partes[2] + '/' + partes[1] + '/' + partes[0];
+}
 function renderCartaoSalvos(){
   const lista = getRemedios();
   const container = document.getElementById('listaCartaoSalvos');
@@ -1419,11 +1461,23 @@ function adicionarItemAvulsoCartao(){
   const nome = document.getElementById('cartaoAvulsoNome').value.trim();
   if(!nome){ falar('Digite o nome do remédio antes de adicionar.'); return; }
   const dose = document.getElementById('cartaoAvulsoDose').value.trim() || '1 comprimido';
-  itensCartaoAvulsos.push({ nome, dose, horarios: Array.from(chipsAvulso) });
+  let duracaoLabel = 'Uso contínuo', criadoEm = null, terminaEm = null;
+  if(duracaoAvulsoTipo === 'temp'){
+    const diasStr = document.getElementById('cartaoAvulsoDias').value.trim();
+    const dias = diasStr ? parseInt(diasStr, 10) : 7;
+    criadoEm = hojeISO();
+    terminaEm = calcularDataFim(dias);
+    duracaoLabel = 'Por ' + dias + ' dias';
+  } else if(duracaoAvulsoTipo === 'sos'){
+    duracaoLabel = 'Se necessário';
+  }
+  itensCartaoAvulsos.push({ nome, dose, horarios: Array.from(chipsAvulso), duracaoLabel, criadoEm, terminaEm });
   document.getElementById('cartaoAvulsoNome').value = '';
   document.getElementById('cartaoAvulsoDose').value = '1 comprimido';
+  document.getElementById('cartaoAvulsoDias').value = '';
   chipsAvulso = new Set();
   document.querySelectorAll('[data-pane="pro-cartao"] [data-chipa]').forEach(chip => chip.classList.remove('on'));
+  selecionarDuracaoAvulso('continuo');
   renderCartaoAvulsos();
   falar(nome + ' adicionado à lista do cartão.');
 }
@@ -1435,8 +1489,10 @@ function renderCartaoAvulsos(){
   const container = document.getElementById('listaCartaoAvulsos');
   if(!itensCartaoAvulsos.length){ container.innerHTML = ''; return; }
   container.innerHTML = itensCartaoAvulsos.map((it, i) => {
+    const periodoTxt = it.terminaEm
+      ? ' — de ' + formatDataBR(it.criadoEm) + ' até ' + formatDataBR(it.terminaEm) : '';
     return '<div class="list-item">' +
-      '<div class="info"><div class="name">'+it.nome+'</div><div class="time">'+(it.dose||'')+'</div></div>' +
+      '<div class="info"><div class="name">'+it.nome+'</div><div class="time">'+(it.dose||'')+' — '+(it.duracaoLabel||'')+periodoTxt+'</div></div>' +
       '<button class="mini-listen" style="background:var(--warn);" onclick="removerItemAvulsoCartao('+i+')" aria-label="Remover '+it.nome+'">🗑️</button>' +
     '</div>';
   }).join('');
@@ -1496,6 +1552,27 @@ function doseVisual(doseTexto){
   return html;
 }
 function gerarCartaoPreview(){
+  const pacienteNome = document.getElementById('cartaoPacienteNome').value.trim();
+  const medicoNome = document.getElementById('cartaoMedicoNome').value.trim();
+  const medicoCrm = document.getElementById('cartaoMedicoCrm').value.trim();
+  const erroEl = document.getElementById('erroCartaoCabecalho');
+  // Sempre valida nome do paciente e do médico antes de gerar o cartão — importante porque
+  // este cartão pode estar sendo gerado num celular ou computador diferente daquele onde
+  // o remédio foi originalmente cadastrado, então não dá pra confiar em contexto anterior.
+  if(!nomeCompletoValido(pacienteNome)){
+    const msg = 'Digite o nome completo do paciente, com nome e sobrenome, antes de gerar o cartão.';
+    erroEl.textContent = '⚠️ ' + msg; falar(msg);
+    document.getElementById('cartaoPacienteNome').focus();
+    return;
+  }
+  if(!nomeCompletoValido(medicoNome)){
+    const msg = 'Digite o nome completo do médico responsável, com nome e sobrenome, antes de gerar o cartão.';
+    erroEl.textContent = '⚠️ ' + msg; falar(msg);
+    document.getElementById('cartaoMedicoNome').focus();
+    return;
+  }
+  erroEl.textContent = '';
+
   const salvos = getRemedios();
   const selecionados = Array.from(document.querySelectorAll('.chk-cartao-salvo:checked'))
     .map(chk => salvos[parseInt(chk.getAttribute('data-idx'), 10)])
@@ -1505,6 +1582,12 @@ function gerarCartaoPreview(){
     falar('Selecione ao menos um remédio salvo, ou adicione um remédio avulso, antes de gerar o cartão.');
     return;
   }
+
+  const crmTxt = medicoCrm ? (' — CRM ' + medicoCrm) : '';
+  document.getElementById('previewCartaoCabecalho').innerHTML =
+    '<div><b>Paciente:</b> ' + pacienteNome + '</div>' +
+    '<div><b>Médico(a) responsável:</b> ' + medicoNome + crmTxt + '</div>';
+
   const linhas = [];
   todosItens.forEach(it => {
     const fotoTag = it.foto
@@ -1520,6 +1603,9 @@ function gerarCartaoPreview(){
         const emoji = HORARIO_EMOJI[h] || '💊';
         linhas.push('<div class="row"><span style="font-size:30px;">'+emoji+'</span>'+fotoTag+'<b>'+it.nome+'</b> '+doseVisual(it.dose)+'</div>');
       });
+    }
+    if(it.terminaEm){
+      linhas.push('<div style="text-align:center;font-size:12.5px;color:var(--muted);margin:-4px 0 14px;">📅 De ' + formatDataBR(it.criadoEm) + ' até ' + formatDataBR(it.terminaEm) + '</div>');
     }
   });
   document.getElementById('previewCartaoConteudo').innerHTML = linhas.join('');
