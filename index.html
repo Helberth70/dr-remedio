@@ -320,23 +320,42 @@
       <div class="app-header"><h2>Dados da Receita</h2></div>
       <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
       <div class="result-card">
-        <p class="med-sub" style="margin:0 0 8px;"><b>Texto que reconheci na foto:</b></p>
-        <div style="max-height:120px;overflow:auto;background:var(--bg);border-radius:12px;padding:10px;font-size:13px;color:var(--muted);white-space:pre-wrap;line-height:1.5;" id="textoOcrCabecalho">—</div>
+        <p class="med-sub" style="margin:0 0 8px;"><b>Texto que reconheci na foto</b> (referência, não é lido em voz alta):</p>
+        <div style="max-height:100px;overflow:auto;background:var(--bg);border-radius:12px;padding:10px;font-size:13px;color:var(--muted);white-space:pre-wrap;line-height:1.5;" id="textoOcrCabecalho">—</div>
       </div>
       <div class="result-card">
-        <span class="field-label">Nome do paciente</span>
-        <input type="text" id="confPaciente" class="field-input" placeholder="Digite o nome do paciente">
         <span class="field-label">Nome do médico</span>
         <input type="text" id="confMedicoNome" class="field-input" placeholder="Digite o nome do médico">
-        <span class="field-label">CRM (opcional)</span>
+        <span class="field-label">CRM</span>
         <input type="text" id="confMedicoCrm" class="field-input" placeholder="Ex: 12345-SP">
+        <span class="field-label">Especialidade</span>
+        <input type="text" id="confEspecialidade" class="field-input" placeholder="Ex: Cardiologia">
+        <span class="field-label">Nome do paciente</span>
+        <input type="text" id="confPaciente" class="field-input" placeholder="Digite o nome do paciente">
       </div>
-      <p class="med-sub" style="margin:0 0 16px;">Os remédios desta receita são adicionados na próxima tela, um de cada vez, pelo profissional de saúde.</p>
-      <button class="big-btn outline" onclick="ouvirTextoOcrCabecalho()">
-        <span class="emoji">🔊</span> Ouvir Texto Lido de Novo
+      <button class="big-btn outline" onclick="repetir()">
+        <span class="emoji">🔊</span> Ouvir de Novo
       </button>
       <button class="big-btn primary" onclick="confirmarCabecalho()">
         <span class="emoji">✅</span> Continuar
+      </button>
+      <div class="footer-link" onclick="go('home')">← Início</div>
+    </div>
+
+    <!-- RECEITA: ORIENTAÇÕES ADICIONAIS -->
+    <div class="pane" data-pane="receita-orientacoes">
+      <div class="app-header"><h2>Orientações Adicionais</h2></div>
+      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
+      <div class="result-card">
+        <span class="field-label">Alguma orientação além dos remédios? (opcional)</span>
+        <textarea id="orientacoesTexto" class="field-input" style="min-height:110px;resize:vertical;font-weight:500;font-size:15px;" placeholder="Ex: Não consumir bebida alcoólica por 5 dias. Retornar em 30 dias."></textarea>
+      </div>
+      <p class="med-sub" style="margin:0 0 16px;">O paciente vai poder ouvir isso sempre que abrir "Meus Remédios".</p>
+      <button class="big-btn outline" onclick="repetir()">
+        <span class="emoji">🔊</span> Ouvir de Novo
+      </button>
+      <button class="big-btn primary" onclick="confirmarOrientacoes()">
+        <span class="emoji">➡️</span> Continuar
       </button>
       <div class="footer-link" onclick="go('home')">← Início</div>
     </div>
@@ -719,12 +738,17 @@ function paneText(id){
     case 'receita-loading':
       return 'Um momento, estou lendo o texto da receita. Isso pode levar alguns segundos.';
     case 'receita-cabecalho': {
-      let fala = ocrTextoAtual
-        ? ('Veja o texto que eu consegui ler: ' + ocrTextoAtual + '.')
-        : 'Não consegui reconhecer nenhum texto nesta foto.';
-      fala += ' Confira o nome do paciente e do médico, corrija se precisar, e toque em continuar.';
+      const partes = [];
+      if(receitaContexto.medico && receitaContexto.medico.nome) partes.push('médico ' + receitaContexto.medico.nome);
+      if(receitaContexto.medico && receitaContexto.medico.crm) partes.push('C R M ' + receitaContexto.medico.crm);
+      if(receitaContexto.especialidade) partes.push('especialidade ' + receitaContexto.especialidade);
+      if(receitaContexto.paciente) partes.push('paciente ' + receitaContexto.paciente);
+      let fala = partes.length ? ('Reconheci: ' + partes.join(', ') + '.') : 'Não consegui reconhecer os dados automaticamente.';
+      fala += ' Confira e corrija os campos se precisar, e toque em continuar.';
       return fala;
     }
+    case 'receita-orientacoes':
+      return 'Se o médico deu alguma orientação além dos remédios, como evitar bebida alcoólica, digite aqui. Se não tiver nenhuma, pode deixar em branco e tocar em continuar.';
     case 'medicamento-novo':
       return 'Digite o nome do remédio, a dose e os horários, e toque em continuar. Você pode adicionar mais de um remédio desta receita, um de cada vez.';
     case 'confirmar-leitura': {
@@ -788,9 +812,24 @@ async function reconhecerTexto(file){
   }
 }
 
+const ESPECIALIDADES_MEDICAS = [
+  'Clínico Geral','Clínica Médica','Cardiologia','Cardiologista','Pediatria','Pediatra',
+  'Ginecologia','Ginecologista','Obstetrícia','Dermatologia','Dermatologista','Ortopedia','Ortopedista',
+  'Neurologia','Neurologista','Psiquiatria','Psiquiatra','Endocrinologia','Endocrinologista',
+  'Oftalmologia','Oftalmologista','Otorrinolaringologia','Otorrino','Urologia','Urologista',
+  'Gastroenterologia','Gastroenterologista','Reumatologia','Reumatologista','Oncologia','Oncologista',
+  'Geriatria','Geriatra','Nutrologia','Medicina de Família','Medicina do Trabalho','Anestesiologia',
+  'Cirurgia Geral','Cirurgião','Cirurgiã','Pneumologia','Pneumologista','Infectologia','Infectologista',
+  'Nefrologia','Nefrologista','Hematologia','Hematologista','Angiologia','Angiologista',
+  'Alergologia','Alergista','Fisiatria','Radiologia','Homeopatia','Mastologia','Mastologista',
+  'Proctologia','Proctologista'
+];
+const ESPECIALIDADE_REGEX = new RegExp(
+  '\\b(' + ESPECIALIDADES_MEDICAS.map(e => e.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|') + ')\\b', 'i'
+);
 function parseCabecalhoReceita(texto){
   const linhas = (texto || '').split('\n').map(l => l.trim()).filter(Boolean);
-  const resultado = { paciente:'', medicoNome:'', medicoCrm:'' };
+  const resultado = { paciente:'', medicoNome:'', medicoCrm:'', especialidade:'' };
   for(const linha of linhas){
     const mPaciente = linha.match(/paciente\s*[:\-]?\s*(.{2,60})/i);
     if(mPaciente && !resultado.paciente) resultado.paciente = mPaciente[1].trim();
@@ -801,6 +840,10 @@ function parseCabecalhoReceita(texto){
     }
     const mCrm = linha.match(/crm[\/\-\s]*\w{0,4}\s*[:\-]?\s*([\d.\-\/A-Za-z]{3,15})/i);
     if(mCrm && !resultado.medicoCrm) resultado.medicoCrm = mCrm[1].trim();
+    if(!resultado.especialidade){
+      const mEsp = linha.match(ESPECIALIDADE_REGEX);
+      if(mEsp) resultado.especialidade = mEsp[1];
+    }
   }
   return resultado;
 }
@@ -815,8 +858,8 @@ function parseTextoCaixa(texto){
   return resultado;
 }
 
-/* --- Fluxo Receita: cabeçalho (paciente/médico) + remédios adicionados manualmente --- */
-let receitaContexto = { paciente:'', medico:null };
+/* --- Fluxo Receita: cabeçalho (médico/paciente) + orientações + remédios adicionados manualmente --- */
+let receitaContexto = { paciente:'', medico:null, especialidade:'', orientacoes:'' };
 let chipsMedNovo = new Set();
 
 function abrirReceitaCabecalho(){
@@ -824,16 +867,22 @@ function abrirReceitaCabecalho(){
   document.getElementById('confPaciente').value = receitaContexto.paciente || '';
   document.getElementById('confMedicoNome').value = receitaContexto.medico ? (receitaContexto.medico.nome||'') : '';
   document.getElementById('confMedicoCrm').value = receitaContexto.medico ? (receitaContexto.medico.crm||'') : '';
+  document.getElementById('confEspecialidade').value = receitaContexto.especialidade || '';
   go('receita-cabecalho');
-}
-function ouvirTextoOcrCabecalho(){
-  falar(ocrTextoAtual ? ('Texto reconhecido: ' + ocrTextoAtual) : 'Não consegui reconhecer nenhum texto nesta foto.');
 }
 function confirmarCabecalho(){
   const paciente = document.getElementById('confPaciente').value.trim();
   const medicoNome = document.getElementById('confMedicoNome').value.trim();
   const medicoCrm = document.getElementById('confMedicoCrm').value.trim();
-  receitaContexto = { paciente, medico: medicoNome ? { nome:medicoNome, crm:medicoCrm } : null };
+  const especialidade = document.getElementById('confEspecialidade').value.trim();
+  receitaContexto.paciente = paciente;
+  receitaContexto.medico = medicoNome ? { nome:medicoNome, crm:medicoCrm, especialidade } : null;
+  receitaContexto.especialidade = especialidade;
+  document.getElementById('orientacoesTexto').value = receitaContexto.orientacoes || '';
+  go('receita-orientacoes');
+}
+function confirmarOrientacoes(){
+  receitaContexto.orientacoes = document.getElementById('orientacoesTexto').value.trim();
   abrirMedicamentoNovo();
 }
 function abrirMedicamentoNovo(){
@@ -866,7 +915,8 @@ function salvarMedicamentoNovo(){
     origem: origemLeitura === 'qr' ? 'QR Code (Receita Memed)' : 'Receita (foto)',
     duracaoDias: dias,
     medico: receitaContexto.medico || null,
-    paciente: receitaContexto.paciente || ''
+    paciente: receitaContexto.paciente || '',
+    orientacoes: receitaContexto.orientacoes || ''
   };
   go('duracao-tratamento');
 }
@@ -929,7 +979,12 @@ async function onFotoReceita(){
   const r = await reconhecerTexto(file);
   ocrTextoAtual = r.texto;
   const cab = parseCabecalhoReceita(ocrTextoAtual);
-  receitaContexto = { paciente: cab.paciente, medico: cab.medicoNome ? { nome: cab.medicoNome, crm: cab.medicoCrm } : null };
+  receitaContexto = {
+    paciente: cab.paciente,
+    medico: cab.medicoNome ? { nome: cab.medicoNome, crm: cab.medicoCrm, especialidade: cab.especialidade } : null,
+    especialidade: cab.especialidade,
+    orientacoes: ''
+  };
   abrirReceitaCabecalho();
 }
 function onQRReceita(){
@@ -937,7 +992,7 @@ function onQRReceita(){
   go('receita-loading');
   setTimeout(() => {
     ocrTextoAtual = 'A leitura automática do QR Code da Memed ainda está em desenvolvimento. Preencha os dados abaixo com o paciente.';
-    receitaContexto = { paciente:'', medico:null };
+    receitaContexto = { paciente:'', medico:null, especialidade:'', orientacoes:'' };
     abrirReceitaCabecalho();
   }, 700);
 }
@@ -1093,9 +1148,11 @@ function renderRemedios(){
     const concluido = tratamentoProvavelmenteConcluido(r);
     const avisoConcluido = concluido
       ? '<div style="font-size:12px;color:var(--warn);font-weight:700;margin-top:2px;">✅ Tratamento já deve ter terminado</div>' : '';
+    const orientacaoTxt = r.orientacoes
+      ? '<div style="font-size:12px;color:var(--accent);margin-top:2px;">📝 '+r.orientacoes+'</div>' : '';
     return '<div class="list-item" style="align-items:flex-start;'+(concluido ? 'border-color:#f1d38a;background:#fffaf0;' : '')+'">' +
       '<div class="pictogram" style="width:48px;height:48px;font-size:22px;">'+emoji+'</div>' +
-      '<div class="info"><div class="name">'+r.nome+'</div><div class="time">'+(r.dose||'')+' — '+(r.duracaoLabel||'')+'</div>'+avisoConcluido+'</div>' +
+      '<div class="info"><div class="name">'+r.nome+'</div><div class="time">'+(r.dose||'')+' — '+(r.duracaoLabel||'')+'</div>'+orientacaoTxt+avisoConcluido+'</div>' +
       '<div style="display:flex;flex-direction:column;gap:8px;">' +
         '<button class="mini-listen" onclick="falarRemedio('+i+')" aria-label="Ouvir informações de '+r.nome+'">🔊</button>' +
         '<button class="mini-listen" style="background:var(--warn);" onclick="pedirExclusao('+i+')" aria-label="Excluir '+r.nome+'">🗑️</button>' +
@@ -1106,8 +1163,10 @@ function renderRemedios(){
 function falarRemedio(i){
   const r = getRemedios()[i];
   if(!r) return;
-  falar(r.nome + '. ' + (r.dose||'') + '. ' + (r.duracaoLabel||'') + '. Horários: ' + horariosFalados(r.horarios) + '.' +
-    (tratamentoProvavelmenteConcluido(r) ? ' Atenção: este tratamento já deve ter terminado. Você pode excluir se quiser.' : ''));
+  let fala = r.nome + '. ' + (r.dose||'') + '. ' + (r.duracaoLabel||'') + '. Horários: ' + horariosFalados(r.horarios) + '.';
+  if(r.orientacoes) fala += ' Orientação do médico: ' + r.orientacoes + '.';
+  if(tratamentoProvavelmenteConcluido(r)) fala += ' Atenção: este tratamento já deve ter terminado. Você pode excluir se quiser.';
+  falar(fala);
 }
 
 let indiceParaExcluir = null;
