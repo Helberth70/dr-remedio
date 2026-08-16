@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f6e4f">
+<title>Dr. Remédio — Acessível</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dr. Remédio">
+<style>
+  :root{
+    --bg:#f4f6f5;
+    --card:#ffffff;
+    --ink:#14231f;
+    --muted:#4b5a56;
+    --brand:#0f6e4f;
+    --brand-dark:#0b4f39;
+    --accent:#1c7ed6;
+    --warn:#b3541e;
+    --line:#d8e2df;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  #app{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    background:var(--bg);
+  }
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 16px;
+    background:var(--brand);
+    color:#fff;
+    position:sticky;
+    top:0;
+    z-index:5;
+  }
+  .topbar .app-name{font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px;}
+  .mute-btn{
+    background:rgba(255,255,255,0.18);
+    border:2px solid rgba(255,255,255,0.4);
+    color:#fff;
+    border-radius:12px;
+    padding:8px 12px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  main{
+    flex:1;
+    padding:18px 16px 40px;
+  }
+  .pane{display:none;flex-direction:column;}
+  .pane.active{display:flex;}
+  .app-header{text-align:center;margin-bottom:16px;}
+  .app-header .logo{font-size:44px;line-height:1;}
+  .app-header h2{margin:8px 0 4px;font-size:23px;}
+  .app-header p{margin:0;font-size:14px;color:var(--muted);}
+  .big-btn{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    width:100%;
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:20px;
+    padding:20px;
+    margin-bottom:16px;
+    text-align:left;
+    font-size:19px;
+    font-weight:800;
+    color:var(--ink);
+    cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    min-height:64px;
+  }
+  .big-btn .emoji{font-size:34px;flex-shrink:0;}
+  .big-btn.primary{background:var(--brand);color:#fff;border-color:var(--brand-dark);}
+  .big-btn.secondary{background:var(--accent);color:#fff;border-color:#155faa;}
+  .big-btn.outline{background:transparent;border:2px dashed var(--line);color:var(--muted);font-weight:700;font-size:15px;padding:14px;min-height:auto;}
+  .big-btn.pro{background:#fff;color:#134a99;border:2px solid #b9d3f7;font-size:16px;}
+  .big-btn:active{transform:scale(0.98);}
+  .footer-link{
+    text-align:center;
+    font-size:14px;
+    color:var(--muted);
+    padding:14px 0 4px;
+    text-decoration:underline;
+    cursor:pointer;
+  }
+  .speak-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:#e6f4ee;
+    color:var(--brand-dark);
+    font-size:13px;
+    font-weight:700;
+    padding:8px 12px;
+    border-radius:999px;
+    margin:0 auto 16px;
+  }
+  .camera-tile{
+    display:block;
+    background:#0b0f0e;
+    border-radius:18px;
+    height:240px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    color:#cfe9de;
+    font-size:16px;
+    margin-bottom:18px;
+    text-align:center;
+    padding:14px;
+    cursor:pointer;
+    border:none;
+    width:100%;
+  }
+  .camera-tile .big-emoji{font-size:52px;margin-bottom:8px;}
+  .loading-box{
+    text-align:center;
+    color:var(--muted);
+    font-size:15px;
+    margin:16px 0 22px;
+  }
+  .spinner{
+    width:44px;height:44px;border-radius:50%;
+    border:5px solid var(--line);border-top-color:var(--brand);
+    margin:0 auto 14px;
+    animation:spin 1s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .result-card{
+    background:var(--card);
+    border-radius:20px;
+    border:2px solid var(--line);
+    padding:18px;
+    margin-bottom:18px;
+  }
+  .pill-row{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
+  .pictogram{
+    width:56px;height:56px;border-radius:16px;
+    background:#fff4e6;
+    display:flex;align-items:center;justify-content:center;font-size:28px;
+    flex-shrink:0;
+  }
+  .med-name{font-size:20px;font-weight:800;margin:0;}
+  .med-sub{font-size:14px;color:var(--muted);margin:3px 0 0;}
+  .divider{height:1px;background:var(--line);margin:14px 0;}
+  .list-item{
+    display:flex;align-items:center;gap:14px;
+    background:var(--card);border:2px solid var(--line);border-radius:18px;
+    padding:14px;margin-bottom:14px;
+  }
+  .list-item .info{flex:1;}
+  .list-item .name{font-weight:800;font-size:16.5px;}
+  .list-item .time{font-size:13px;color:var(--muted);}
+  .mini-listen{
+    background:var(--brand);color:#fff;border:none;border-radius:14px;
+    padding:12px 14px;font-weight:700;font-size:14px;min-width:52px;
+  }
+  .badge-role{
+    display:inline-block;background:#e7f0ff;color:#134a99;
+    font-size:12.5px;font-weight:800;padding:6px 12px;border-radius:999px;
+    margin-bottom:12px;
+  }
+  .badge-farmacia{background:#fdece0;color:var(--warn);}
+  .toggle-chip{
+    display:inline-flex;align-items:center;gap:6px;
+    border:2px solid var(--line);border-radius:999px;
+    padding:10px 14px;font-size:14px;font-weight:700;margin:0 8px 10px 0;
+    background:#fff;cursor:pointer;
+  }
+  .toggle-chip.on{background:var(--brand);color:#fff;border-color:var(--brand-dark);}
+  .field-label{font-size:13px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px;}
+  .field-input{
+    width:100%;font-size:17px;font-weight:700;padding:12px;
+    border:2px solid var(--line);border-radius:12px;margin:0 0 16px;
+    font-family:inherit;
+  }
+  .print-preview{
+    border:2px dashed var(--line);border-radius:16px;padding:18px;
+    background:#fff;margin:14px 0 18px;text-align:center;
+  }
+  .print-preview .row{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:10px;font-size:17px;}
+  .sr-only{
+    position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0,0,0,0);white-space:nowrap;border:0;
+  }
+  .empty-state{text-align:center;color:var(--muted);font-size:15px;padding:30px 10px;}
+  .install-hint{
+    background:#fff8e6;border:2px solid #f1d38a;color:#7a5b12;
+    border-radius:16px;padding:14px;font-size:13px;margin-bottom:18px;line-height:1.5;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="topbar">
+    <div class="app-name">🩺 Dr. Remédio</div>
+    <button class="mute-btn" id="muteBtn" onclick="toggleMute()" aria-pressed="false">🔊 Voz: Ligada</button>
+  </div>
+
+  <main id="screens">
+
+    <!-- HOME -->
+    <div class="pane active" data-pane="home">
+      <div class="app-header">
+        <div class="logo">🩺</div>
+        <h2>Dr. Remédio</h2>
+        <p>Toque em um botão grande abaixo</p>
+      </div>
+      <div class="install-hint" id="installHint">📲 Dica: use o menu do navegador e escolha "Adicionar à Tela de Início" para instalar este app no seu celular.</div>
+      <button class="big-btn primary" onclick="go('receita-metodo')">
+        <span class="emoji">📷</span> Fotografar Receita
+      </button>
+      <button class="big-btn secondary" onclick="go('caixa-camera')">
+        <span class="emoji">📦</span> Fotografar Caixa de Remédio
+      </button>
+      <button class="big-btn" onclick="go('meus-remedios')">
+        <span class="emoji">📋</span> Meus Remédios
+      </button>
+      <button class="big-btn pro" onclick="go('pro-home')">
+        <span class="emoji">🧑‍⚕️</span> Modo Profissional de Saúde
+      </button>
+      <p class="med-sub" style="text-align:center;margin-top:-6px;">Para médicos, farmacêuticos e estudantes de saúde</p>
+      <div class="footer-link" onclick="verTermos()">Termo de Uso e Privacidade</div>
+    </div>
+
+    <!-- TERMO DE USO -->
+    <div class="pane" data-pane="termos">
+      <div class="app-header"><h2>Antes de começar</h2></div>
+      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
+      <div class="result-card">
+        <p class="med-sub" style="margin:0 0 10px;">Este aplicativo é <b>gratuito</b> e ajuda você a entender o nome, a dose e o horário dos seus remédios, usando voz.</p>
+        <p class="med-sub" style="margin:0 0 10px;">Seus dados ficam guardados <b>só no seu celular</b>. Nada é enviado para a internet nem guardado em nenhum servidor.</p>
+        <p class="med-sub" style="margin:0;">Este aplicativo <b>não substitui o médico ou o farmacêutico</b>, e não tem responsabilidade sobre a receita ou sobre o remédio que você toma. Siga sempre a orientação do seu médico. Em caso de dúvida, procure um profissional de saúde.</p>
+      </div>
+      <button class="big-btn outline" onclick="falarTermoCompleto()">
+        <span class="emoji">🔊</span> Ouvir Versão Completa
+      </button>
+      <details style="margin-bottom:18px;">
+        <summary style="cursor:pointer;font-weight:700;color:var(--muted);font-size:14px;padding:6px 0;">Ler texto completo</summary>
+        <div class="result-card" style="margin-top:10px;font-size:13.5px;line-height:1.6;color:var(--muted);white-space:pre-line;" id="termoTextoCompleto"></div>
+      </details>
+      <button class="big-btn primary" id="btnAceitarTermos" onclick="aceitarTermos()">
+        <span class="emoji">✅</span> Entendi e Aceito
+      </button>
+      <div class="footer-link" id="linkFecharTermos" style="display:none;" onclick="go('home')">← Voltar</div>
+    </div>
+
+    <!-- RECEITA: ESCOLHER MÉTODO -->
+    <div class="pane" data-pane="receita-metodo">
+      <div class="app-header"><h2>Como está sua receita?</h2></div>
+      <div class="speak-badge">🔊 Escolha uma opção</div>
+      <button class="big-btn primary" onclick="go('receita-camera')">
+        <span class="emoji">📷</span> Fotografar (papel impresso)
+      </button>
+      <button class="big-btn secondary" onclick="go('receita-qr')">
+        <span class="emoji">▦</span> Ler QR Code (Receita Memed)
+      </button>
+      <p class="med-sub" style="text-align:center;margin-top:4px;">Se a receita foi feita pelo Memed, ler o QR Code é mais confiável — traz até o nome e o CRM do médico.</p>
+      <div class="footer-link" onclick="go('home')">← Voltar</div>
+    </div>
+
+    <!-- RECEITA: CAMERA (papel) -->
+    <div class="pane" data-pane="receita-camera">
+      <div class="app-header"><h2>Fotografar Receita</h2></div>
+      <div class="speak-badge">🔊 Aponte a câmera para a receita</div>
+      <label class="camera-tile" for="fotoReceita">
+        <span class="big-emoji">📷</span>
+        Toque aqui para tirar a foto da receita
+      </label>
+      <input type="file" id="fotoReceita" accept="image/*" capture="environment" class="sr-only" onchange="onFotoReceita()">
+      <div class="footer-link" onclick="go('receita-metodo')">← Voltar</div>
+    </div>
+
+    <!-- RECEITA: QR CODE MEMED -->
+    <div class="pane" data-pane="receita-qr">
+      <div class="app-header"><h2>Ler QR Code (Memed)</h2></div>
+      <div class="speak-badge">🔊 Aponte a câmera para o QR Code da receita</div>
+      <label class="camera-tile" for="fotoQrReceita">
+        <span class="big-emoji">▦</span>
+        Toque aqui para escanear o QR Code
+      </label>
+      <input type="file" id="fotoQrReceita" accept="image/*" capture="environment" class="sr-only" onchange="onQRReceita()">
+      <div class="footer-link" onclick="go('receita-metodo')">← Voltar</div>
+    </div>
+
+    <!-- RECEITA: LOADING -->
+    <div class="pane" data-pane="receita-loading">
+      <div class="app-header"><h2>Lendo a receita…</h2></div>
+      <div class="loading-box">
+        <div class="spinner"></div>
+        Analisando o texto da receita
+      </div>
+    </div>
+
+    <!-- RECEITA: RESULTADO -->
+    <div class="pane" data-pane="receita-resultado">
+      <div class="app-header"><h2>Encontrei isto na receita</h2></div>
+      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
+      <div class="result-card">
+        <div class="pill-row">
+          <div class="pictogram">☀️</div>
+          <div>
+            <p class="med-name">Losartana 50mg</p>
+            <p class="med-sub">1 comprimido — de manhã</p>
+          </div>
+        </div>
+        <div class="pill-row">
+          <div class="pictogram">🌙</div>
+          <div>
+            <p class="med-name">Losartana 50mg</p>
+            <p class="med-sub">1 comprimido — à noite</p>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <p class="med-sub" style="margin:0;">🗓️ Duração detectada na receita: <b>7 dias</b> (confirme na próxima tela)</p>
+      </div>
+      <div class="result-card" id="medicoCard" style="display:none;">
+        <p class="med-sub" style="margin:0;">👨‍⚕️ Receita de <b id="medicoNome"></b> — CRM <span id="medicoCrm"></span></p>
+      </div>
+      <button class="big-btn primary" onclick="repetir()">
+        <span class="emoji">🔊</span> Ouvir de Novo
+      </button>
+      <button class="big-btn secondary" onclick="go('duracao-tratamento')">
+        <span class="emoji">📅</span> Adicionar ao Calendário
+      </button>
+      <button class="big-btn" onclick="salvarSemAlarme()">
+        <span class="emoji">💾</span> Salvar em Meus Remédios
+      </button>
+      <div class="footer-link" onclick="go('home')">← Início</div>
+    </div>
+
+    <!-- DURACAO -->
+    <div class="pane" data-pane="duracao-tratamento">
+      <div class="app-header"><h2>Por quanto tempo?</h2></div>
+      <div class="speak-badge">🔊 Escolha uma opção</div>
+      <button class="big-btn primary" onclick="confirmarDuracao('temp')">
+        <span class="emoji">📅</span> Por tempo determinado (7 dias)
+      </button>
+      <button class="big-btn secondary" onclick="confirmarDuracao('continuo')">
+        <span class="emoji">♾️</span> Uso contínuo (para sempre)
+      </button>
+      <button class="big-btn" onclick="confirmarDuracao('sos')">
+        <span class="emoji">🤒</span> Se necessário (sem horário fixo)
+      </button>
+      <p class="med-sub" style="text-align:center;margin-top:4px;">A duração vem da receita — se detectar errado, corrija aqui antes de salvar.</p>
+      <div class="footer-link" onclick="go('receita-resultado')">← Voltar</div>
+    </div>
+
+    <!-- CALENDARIO -->
+    <div class="pane" data-pane="calendario">
+      <div class="app-header"><h2>Lembrete Criado</h2></div>
+      <div class="result-card" style="text-align:center;">
+        <div style="font-size:46px;">✅📅</div>
+        <p class="med-name">Adicionado ao Calendário</p>
+        <p class="med-sub" id="calendarioDetalhe">—</p>
+      </div>
+      <p class="med-sub" style="text-align:center;">Um arquivo de calendário (.ics) foi baixado. Toque nele para adicionar ao Calendário do seu celular.</p>
+      <button class="big-btn primary" onclick="go('home')">
+        <span class="emoji">🏠</span> Voltar ao Início
+      </button>
+    </div>
+
+    <!-- SALVO SOS -->
+    <div class="pane" data-pane="salvo-sos">
+      <div class="app-header"><h2>Salvo em Meus Remédios</h2></div>
+      <div class="result-card" style="text-align:center;">
+        <div style="font-size:46px;">✅🤒</div>
+        <p class="med-name">Sem alarme fixo</p>
+        <p class="med-sub">Este remédio é "se necessário" — vai ficar guardado em Meus Remédios pra você ouvir de novo sempre que precisar usar.</p>
+      </div>
+      <button class="big-btn primary" onclick="go('home')">
+        <span class="emoji">🏠</span> Voltar ao Início
+      </button>
+    </div>
+
+    <!-- CAIXA: CAMERA -->
+    <div class="pane" data-pane="caixa-camera">
+      <div class="app-header"><h2>Fotografar Caixa</h2></div>
+      <div class="speak-badge">🔊 Aponte a câmera para o código de barras</div>
+      <label class="camera-tile" for="fotoCaixa">
+        <span class="big-emoji">📦</span>
+        Toque aqui para tirar a foto da caixa
+      </label>
+      <input type="file" id="fotoCaixa" accept="image/*" capture="environment" class="sr-only" onchange="onFotoCaixa()">
+      <div class="footer-link" onclick="go('home')">← Voltar</div>
+    </div>
+
+    <!-- CAIXA: LOADING -->
+    <div class="pane" data-pane="caixa-loading">
+      <div class="app-header"><h2>Identificando o remédio…</h2></div>
+      <div class="loading-box">
+        <div class="spinner"></div>
+        Buscando na base pública da Anvisa
+      </div>
+    </div>
+
+    <!-- CAIXA: RESULTADO -->
+    <div class="pane" data-pane="caixa-resultado">
+      <div class="app-header"><h2>Remédio Identificado</h2></div>
+      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
+      <div class="result-card">
+        <div class="pill-row">
+          <div class="pictogram">💊</div>
+          <div>
+            <p class="med-name">Paracetamol 750mg</p>
+            <p class="med-sub">Analgésico e antitérmico</p>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <p class="med-sub" style="margin:0;">⚠️ Tome somente com orientação. Consulte sempre o horário indicado por seu médico ou farmacêutico.</p>
+      </div>
+      <button class="big-btn primary" onclick="repetir()">
+        <span class="emoji">🔊</span> Ouvir de Novo
+      </button>
+      <button class="big-btn" onclick="go('duracao-tratamento')">
+        <span class="emoji">💾</span> Salvar em Meus Remédios
+      </button>
+      <button class="big-btn outline" id="btnAjustarFarmacia" style="display:none;" onclick="go('caixa-ajustar')">
+        <span class="emoji">✏️</span> Ajustar Dose/Horário (receita diferente da bula)
+      </button>
+      <div class="footer-link" onclick="go('home')">← Início</div>
+    </div>
+
+    <!-- CAIXA: AJUSTAR -->
+    <div class="pane" data-pane="caixa-ajustar">
+      <span class="badge-role badge-farmacia">📍 MODO FARMÁCIA</span>
+      <div class="app-header" style="text-align:left;margin-bottom:8px;">
+        <h2 style="margin:0;">Ajustar Informação</h2>
+        <p style="margin:6px 0 0;">Use quando a receita do médico pede algo diferente da bula padrão.</p>
+      </div>
+      <div class="result-card">
+        <span class="field-label">Dose</span>
+        <input type="text" id="inputDose" class="field-input" value="1/2 comprimido">
+        <span class="field-label">Horário (texto livre)</span>
+        <input type="text" id="inputHorarioTexto" class="field-input" value="De 12 em 12 horas">
+        <span class="field-label">Horários do dia (para o alarme)</span>
+        <div style="margin-top:4px;">
+          <span class="toggle-chip" data-chip="manha" onclick="toggleChip(this,'manha')">☀️ Manhã</span>
+          <span class="toggle-chip" data-chip="tarde" onclick="toggleChip(this,'tarde')">🌤️ Tarde</span>
+          <span class="toggle-chip" data-chip="noite" onclick="toggleChip(this,'noite')">🌙 Noite</span>
+        </div>
+      </div>
+      <button class="big-btn primary" onclick="salvarAjusteFarmacia()">
+        <span class="emoji">💾</span> Salvar Ajuste
+      </button>
+      <div class="footer-link" onclick="go('caixa-resultado')">← Voltar</div>
+    </div>
+
+    <!-- AUTORIZACAO FARMACIA -->
+    <div class="pane" data-pane="auth-farmacia">
+      <span class="badge-role badge-farmacia">📍 VOCÊ ESTÁ NA FARMÁCIA</span>
+      <div class="app-header" style="text-align:left;margin-bottom:8px;">
+        <h2 style="margin:0;">Autorização</h2>
+      </div>
+      <div class="speak-badge" style="display:flex;">🔊 pergunta em voz alta</div>
+      <div class="result-card">
+        <p class="med-sub" style="margin:0;">Este remédio não precisa de receita, ou a farmacêutica quer registrar uma informação no seu aplicativo. Você autoriza?</p>
+      </div>
+      <button class="big-btn primary" onclick="autorizarFarmacia(true)">
+        <span class="emoji">✅</span> Sim, Autorizo
+      </button>
+      <button class="big-btn outline" onclick="autorizarFarmacia(false)">
+        <span class="emoji">❌</span> Não, Obrigado(a)
+      </button>
+    </div>
+
+    <!-- MEUS REMEDIOS -->
+    <div class="pane" data-pane="meus-remedios">
+      <div class="app-header"><h2>Meus Remédios</h2></div>
+      <div id="listaRemedios"></div>
+      <div class="footer-link" onclick="go('home')">← Início</div>
+    </div>
+
+    <!-- PRO HOME -->
+    <div class="pane" data-pane="pro-home">
+      <span class="badge-role">MODO PROFISSIONAL DE SAÚDE</span>
+      <div class="app-header" style="text-align:left;margin-bottom:14px;">
+        <h2 style="margin:0;">O que você vai fazer?</h2>
+        <p style="margin:6px 0 0;">Qualquer médico(a), farmacêutico(a) ou estudante de saúde pode usar este modo — não precisa de cadastro nem login.</p>
+      </div>
+      <button class="big-btn primary" onclick="go('pro-cartao')">
+        <span class="emoji">🖨️</span> Gerar Cartão do Paciente
+      </button>
+      <button class="big-btn secondary" onclick="go('auth-farmacia')">
+        <span class="emoji">🏪</span> Modo Farmácia (com autorização)
+      </button>
+      <p class="med-sub">Para remédio sem receita, ou receita que não veio da Memed: a farmacêutica registra no app do próprio paciente, com autorização dele.</p>
+      <div class="footer-link" onclick="go('home')">← Ver como o paciente vê</div>
+    </div>
+
+    <!-- PRO CARTAO -->
+    <div class="pane" data-pane="pro-cartao">
+      <span class="badge-role">MODO PROFISSIONAL DE SAÚDE</span>
+      <div class="app-header" style="text-align:left;margin-bottom:10px;">
+        <h2 style="margin:0;">Gerar Cartão do Paciente</h2>
+        <p style="margin:6px 0 0;">Monte o cartão com pictogramas para o paciente levar, com ou sem celular.</p>
+      </div>
+      <p style="font-size:14px;font-weight:700;margin:8px 0 8px;">Selecione os horários:</p>
+      <div style="margin-bottom:12px;">
+        <span class="toggle-chip on">☀️ Manhã</span>
+        <span class="toggle-chip">🌤️ Tarde</span>
+        <span class="toggle-chip on">🌙 Noite</span>
+      </div>
+      <div class="result-card">
+        <p class="med-name" style="font-size:17px;">Losartana 50mg</p>
+        <p class="med-sub">1 comprimido — manhã e noite</p>
+        <p class="med-sub">🗓️ Duração: uso contínuo</p>
+      </div>
+      <button class="big-btn primary" onclick="go('pro-preview')">
+        <span class="emoji">🖨️</span> Gerar Cartão para Imprimir
+      </button>
+      <div class="footer-link" onclick="go('pro-home')">← Voltar</div>
+    </div>
+
+    <!-- PRO PREVIEW -->
+    <div class="pane" data-pane="pro-preview">
+      <span class="badge-role">PRÉ-VISUALIZAÇÃO DO CARTÃO</span>
+      <div class="print-preview">
+        <h3 style="margin:0 0 12px;">Cartão do Paciente</h3>
+        <div class="row"><span style="font-size:30px;">☀️</span><b>Losartana 50mg — 1 comprimido</b></div>
+        <div class="row"><span style="font-size:30px;">🌙</span><b>Losartana 50mg — 1 comprimido</b></div>
+        <p style="font-size:13px;color:var(--muted);margin-top:12px;">Funciona mesmo sem celular — para entregar impresso.</p>
+      </div>
+      <button class="big-btn primary" onclick="window.print()">
+        <span class="emoji">🖨️</span> Imprimir Agora
+      </button>
+      <div class="footer-link" onclick="go('pro-home')">← Voltar</div>
+    </div>
+
+  </main>
+</div>
+
+<div aria-live="polite" class="sr-only" id="liveRegion"></div>
+
+<script>
+/* ---------- Estado ---------- */
+let currentPane = 'home';
+let currentMed = { nome:'', dose:'', horarios:[], origem:'', duracaoDetectadaFala:'sete dias' };
+let vindoDaFarmacia = false;
+let calendarioFalaAtual = '';
+
+const HORARIO_LABEL = { manha:'manhã', tarde:'tarde', noite:'noite' };
+const HORARIO_HORA = { manha:8, tarde:14, noite:20 };
+
+/* ---------- Voz (Web Speech API) ---------- */
+let vozLigada = localStorage.getItem('vozLigada') !== 'false';
+
+function atualizarBotaoMudo(){
+  const btn = document.getElementById('muteBtn');
+  btn.textContent = vozLigada ? '🔊 Voz: Ligada' : '🔇 Voz: Desligada';
+  btn.setAttribute('aria-pressed', String(!vozLigada));
+}
+function toggleMute(){
+  vozLigada = !vozLigada;
+  localStorage.setItem('vozLigada', String(vozLigada));
+  atualizarBotaoMudo();
+  if(!vozLigada && 'speechSynthesis' in window) speechSynthesis.cancel();
+  else falar('Narração automática ligada.');
+}
+function falar(texto){
+  document.getElementById('liveRegion').textContent = texto;
+  if(!vozLigada) return;
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(texto);
+  u.lang = 'pt-BR';
+  u.rate = 0.95;
+  speechSynthesis.speak(u);
+}
+function repetir(){ falar(paneText(currentPane)); }
+
+/* ---------- Navegação ---------- */
+function go(paneId){
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  const target = document.querySelector('.pane[data-pane="'+paneId+'"]');
+  if(target) target.classList.add('active');
+  currentPane = paneId;
+  if(paneId === 'meus-remedios') renderRemedios();
+  falar(paneText(paneId));
+}
+
+function horariosFalados(lista){
+  if(!lista || !lista.length) return 'nenhum horário fixo definido';
+  return lista.map(h => HORARIO_LABEL[h] || h).join(', ');
+}
+
+function remediosResumoFala(){
+  const lista = getRemedios();
+  if(!lista.length) return 'Você ainda não tem remédios salvos.';
+  return 'Você tem ' + lista.length + ' remédio' + (lista.length>1?'s':'') + ' salvos. ' +
+    lista.map(r => r.nome + ', ' + (r.duracaoLabel||'')).join('. ');
+}
+
+function paneText(id){
+  switch(id){
+    case 'home':
+      return 'Tela inicial. Toque em Fotografar Receita, Fotografar Caixa de Remédio, ou Meus Remédios.';
+    case 'termos':
+      return 'Antes de começar. Este aplicativo é gratuito e ajuda você a entender o nome, a dose e o horário dos seus remédios, usando voz. Seus dados ficam guardados só no seu celular, nada é enviado para a internet nem guardado em nenhum servidor. Este aplicativo não substitui o médico ou o farmacêutico, e não tem responsabilidade sobre a receita ou sobre o remédio que você toma. Siga sempre a orientação do seu médico. Toque em entendi e aceito para continuar.';
+    case 'receita-metodo':
+      return 'Como está sua receita? Toque em fotografar papel impresso, ou ler QR code de receita Memed.';
+    case 'receita-camera':
+      return 'Aponte a câmera para a receita e toque no quadro escuro para tirar a foto.';
+    case 'receita-qr':
+      return 'Aponte a câmera para o QR code da receita e toque no quadro escuro para escanear.';
+    case 'receita-loading':
+      return 'Um momento, estou lendo sua receita.';
+    case 'receita-resultado': {
+      let fala = 'Encontrei isto na receita. Losartana, 50 miligramas. 1 comprimido de manhã, e 1 comprimido à noite. Duração detectada: sete dias.';
+      if(currentMed.medico){
+        fala += ' Receita de ' + currentMed.medico.nome + ', C R M ' + currentMed.medico.crm + '.';
+      }
+      fala += ' Toque em ouvir de novo, adicionar ao calendário, ou salvar.';
+      return fala;
+    }
+    case 'duracao-tratamento':
+      return 'Este remédio é por um tempo certo, para sempre, ou só se precisar? Escolha uma das três opções.';
+    case 'calendario':
+      return calendarioFalaAtual || 'Lembrete criado e adicionado ao calendário.';
+    case 'salvo-sos':
+      return (currentMed.nome || 'O remédio') + ' foi salvo em Meus Remédios, sem alarme fixo. Use quando precisar.';
+    case 'caixa-camera':
+      return 'Aponte a câmera para o código de barras da caixa e toque no quadro escuro para tirar a foto.';
+    case 'caixa-loading':
+      return 'Um momento, estou identificando o remédio na base da Anvisa.';
+    case 'caixa-resultado':
+      return 'Remédio identificado. Paracetamol, 750 miligramas. Analgésico e antitérmico. Tome somente com orientação, e consulte sempre o horário indicado.';
+    case 'caixa-ajustar':
+      return 'Ajuste a dose e o horário conforme a receita, diferente da bula padrão. Depois toque em salvar ajuste.';
+    case 'auth-farmacia':
+      return 'Você autoriza a farmacêutica a adicionar essa informação no seu aplicativo? Toque em sim, autorizo, ou não, obrigado.';
+    case 'meus-remedios':
+      return remediosResumoFala();
+    case 'pro-home':
+      return 'Modo profissional de saúde. Escolha gerar cartão do paciente, ou modo farmácia.';
+    case 'pro-cartao':
+      return 'Selecione os horários e gere o cartão do paciente para imprimir.';
+    case 'pro-preview':
+      return 'Pré visualização do cartão, pronto para imprimir.';
+    default:
+      return '';
+  }
+}
+
+/* ---------- Fluxo Receita ---------- */
+function atualizarCardMedico(){
+  const card = document.getElementById('medicoCard');
+  if(currentMed.medico){
+    document.getElementById('medicoNome').textContent = currentMed.medico.nome;
+    document.getElementById('medicoCrm').textContent = currentMed.medico.crm;
+    card.style.display = 'block';
+  } else {
+    card.style.display = 'none';
+  }
+}
+function onFotoReceita(){
+  currentMed = { nome:'Losartana 50mg', dose:'1 comprimido', horarios:['manha','noite'], origem:'Receita (foto)', duracaoDetectadaFala:'sete dias', duracaoDias:7, medico:null };
+  go('receita-loading');
+  setTimeout(() => { atualizarCardMedico(); go('receita-resultado'); }, 1400);
+}
+function onQRReceita(){
+  currentMed = {
+    nome:'Losartana 50mg', dose:'1 comprimido', horarios:['manha','noite'], origem:'QR Code (Receita Memed)',
+    duracaoDetectadaFala:'sete dias', duracaoDias:7,
+    medico:{ nome:'Dra. Ana Souza', crm:'12345-SP' }
+  };
+  go('receita-loading');
+  setTimeout(() => { atualizarCardMedico(); go('receita-resultado'); }, 1400);
+}
+
+/* ---------- Fluxo Caixa ---------- */
+function onFotoCaixa(){
+  currentMed = { nome:'Paracetamol 750mg', dose:'1 comprimido', horarios:[], origem:'Caixa do remédio (código de barras)', duracaoDetectadaFala:'não detectada', duracaoDias:null };
+  go('caixa-loading');
+  setTimeout(() => go('caixa-resultado'), 1400);
+}
+
+/* ---------- Modo Farmácia ---------- */
+function autorizarFarmacia(sim){
+  if(sim){
+    vindoDaFarmacia = true;
+    document.getElementById('btnAjustarFarmacia').style.display = 'flex';
+    falar('Autorizado. Vamos fotografar a caixa do remédio.');
+    go('caixa-camera');
+  } else {
+    vindoDaFarmacia = false;
+    go('pro-home');
+  }
+}
+
+let chipsSelecionados = new Set();
+function toggleChip(el, valor){
+  el.classList.toggle('on');
+  if(chipsSelecionados.has(valor)) chipsSelecionados.delete(valor);
+  else chipsSelecionados.add(valor);
+}
+function salvarAjusteFarmacia(){
+  currentMed.dose = document.getElementById('inputDose').value || currentMed.dose;
+  currentMed.horarioTextoLivre = document.getElementById('inputHorarioTexto').value;
+  currentMed.horarios = Array.from(chipsSelecionados);
+  falar('Ajuste salvo. ' + currentMed.dose + '. ' + currentMed.horarioTextoLivre);
+  go('duracao-tratamento');
+}
+
+/* ---------- Duração / Calendário ---------- */
+function pad(n){ return String(n).padStart(2,'0'); }
+function formatICSDate(d){
+  return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'T'+pad(d.getHours())+pad(d.getMinutes())+'00';
+}
+function gerarICS(med, dias){
+  const horarios = (med.horarios && med.horarios.length) ? med.horarios : ['manha'];
+  const now = new Date();
+  const eventos = horarios.map(h => {
+    const hora = HORARIO_HORA[h] ?? 8;
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hora, 0, 0);
+    let rrule = 'FREQ=DAILY';
+    if(dias) rrule += ';COUNT=' + dias;
+    return [
+      'BEGIN:VEVENT',
+      'UID:' + start.getTime() + '-' + h + '@meuremedio.app',
+      'DTSTAMP:' + formatICSDate(now) + 'Z',
+      'DTSTART:' + formatICSDate(start),
+      'RRULE:' + rrule,
+      'SUMMARY:💊 Tomar ' + med.nome,
+      'DESCRIPTION:Lembrete criado pelo app Dr. Remédio (' + med.dose + ').',
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:Hora de tomar ' + med.nome,
+      'TRIGGER:-PT0M',
+      'END:VALARM',
+      'END:VEVENT'
+    ].join('\r\n');
+  }).join('\r\n');
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Meu Remedio App//PT-BR',
+    'CALSCALE:GREGORIAN',
+    eventos,
+    'END:VCALENDAR'
+  ].join('\r\n');
+}
+function baixarICS(conteudo, nomeArquivo){
+  const blob = new Blob([conteudo], { type:'text/calendar' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nomeArquivo;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function salvarRemedio(med){
+  const lista = getRemedios();
+  lista.push(med);
+  localStorage.setItem('meusRemedios', JSON.stringify(lista));
+}
+function getRemedios(){
+  try { return JSON.parse(localStorage.getItem('meusRemedios') || '[]'); }
+  catch(e){ return []; }
+}
+
+function salvarSemAlarme(){
+  const med = Object.assign({}, currentMed, { duracaoLabel:'Sem lembrete de calendário' });
+  salvarRemedio(med);
+  falar(med.nome + ' foi salvo em Meus Remédios.');
+  go('meus-remedios');
+}
+
+function confirmarDuracao(tipo){
+  if(tipo === 'sos'){
+    const med = Object.assign({}, currentMed, { duracaoLabel:'Se necessário' });
+    salvarRemedio(med);
+    go('salvo-sos');
+    return;
+  }
+  const dias = tipo === 'temp' ? (currentMed.duracaoDias || 7) : null;
+  const med = Object.assign({}, currentMed, {
+    duracaoLabel: tipo === 'temp' ? ('Por ' + dias + ' dias') : 'Uso contínuo'
+  });
+  salvarRemedio(med);
+
+  const ics = gerarICS(med, dias);
+  baixarICS(ics, (med.nome || 'remedio').replace(/\s+/g,'_') + '.ics');
+
+  calendarioFalaAtual = tipo === 'temp'
+    ? ('Alarme diário criado por ' + dias + ' dias. Depois disso, o lembrete para sozinho.')
+    : ('Alarme diário criado sem data para acabar, porque é uso contínuo.');
+  document.getElementById('calendarioDetalhe').textContent = tipo === 'temp'
+    ? ('Alarme diário por ' + dias + ' dias — depois disso, para sozinho, sem precisar cancelar nada.')
+    : 'Alarme diário sem data para acabar (uso contínuo) — encerre quando o médico indicar.';
+
+  go('calendario');
+}
+
+/* ---------- Meus Remédios ---------- */
+function renderRemedios(){
+  const lista = getRemedios();
+  const container = document.getElementById('listaRemedios');
+  if(!lista.length){
+    container.innerHTML = '<div class="empty-state">Você ainda não tem remédios salvos.<br>Fotografe uma receita ou uma caixa para começar.</div>';
+    return;
+  }
+  container.innerHTML = lista.map((r, i) => {
+    const emoji = r.horarios && r.horarios.includes('noite') && !r.horarios.includes('manha') ? '🌙'
+      : r.horarios && r.horarios.length ? '☀️' : '💊';
+    return '<div class="list-item">' +
+      '<div class="pictogram" style="width:48px;height:48px;font-size:22px;">'+emoji+'</div>' +
+      '<div class="info"><div class="name">'+r.nome+'</div><div class="time">'+(r.dose||'')+' — '+(r.duracaoLabel||'')+'</div></div>' +
+      '<button class="mini-listen" onclick="falarRemedio('+i+')" aria-label="Ouvir informações de '+r.nome+'">🔊</button>' +
+    '</div>';
+  }).join('');
+}
+function falarRemedio(i){
+  const r = getRemedios()[i];
+  if(!r) return;
+  falar(r.nome + '. ' + (r.dose||'') + '. ' + (r.duracaoLabel||'') + '. Horários: ' + horariosFalados(r.horarios) + '.');
+}
+
+/* ---------- Termo de Uso ---------- */
+const TERMO_COMPLETO = `Termo de Uso e Privacidade — versão completa.
+
+1. O que é o aplicativo. O Dr. Remédio é um aplicativo gratuito, sem fins lucrativos, criado para ajudar pessoas analfabetas ou com deficiência visual a entender receitas e remédios, usando voz e pictogramas.
+
+2. Não substitui orientação profissional. O aplicativo não presta aconselhamento médico ou farmacêutico. As informações apresentadas são de apoio à leitura e à interpretação, e podem conter erros de leitura automática. Sempre siga a orientação do seu médico ou farmacêutico. Em caso de dúvida ou emergência, procure atendimento profissional.
+
+3. Isenção de responsabilidade. Os criadores do aplicativo não se responsabilizam por erros de leitura, informações desatualizadas, ou por decisões tomadas com base no aplicativo. O uso é por conta e risco do usuário e de quem o auxilia.
+
+4. Privacidade dos dados. Todos os dados que você fotografar ou salvar (receitas, remédios, horários) ficam guardados apenas no seu próprio celular. Nenhuma informação é enviada, armazenada ou compartilhada em servidores ou com terceiros. Se você desinstalar o aplicativo ou limpar os dados do navegador, essas informações são apagadas.
+
+5. Uso por profissionais de saúde. Quando um médico, farmacêutico ou estudante de saúde usa o Modo Profissional para inserir informações no seu aparelho, isso só acontece com a sua autorização, dada dentro do próprio aplicativo. Esse profissional atua sob sua própria responsabilidade profissional.
+
+6. Gratuidade. Este aplicativo é oferecido gratuitamente, como projeto social e solidário, sem propaganda e sem cobrança, no momento sem fins comerciais.
+
+7. Aceite. Ao tocar em "Entendi e Aceito", você concorda com este termo. Você pode reler este termo a qualquer momento dentro do aplicativo, tocando em "Termo de Uso e Privacidade" na tela inicial.`;
+
+function preencherTermoCompleto(){
+  const el = document.getElementById('termoTextoCompleto');
+  if(el) el.textContent = TERMO_COMPLETO;
+}
+function falarTermoCompleto(){
+  falar(TERMO_COMPLETO.replace(/\n+/g, '. '));
+}
+function aceitarTermos(){
+  localStorage.setItem('termosAceitos', 'true');
+  localStorage.setItem('termosAceitosEm', new Date().toISOString());
+  falar('Obrigado. Bem-vindo ao Doutor Remédio.');
+  go('home');
+}
+function verTermos(){
+  document.getElementById('btnAceitarTermos').style.display = 'none';
+  document.getElementById('linkFecharTermos').style.display = 'block';
+  go('termos');
+}
+
+/* ---------- Inicialização ---------- */
+atualizarBotaoMudo();
+preencherTermoCompleto();
+if(localStorage.getItem('termosAceitos') === 'true'){
+  go('home');
+} else {
+  document.getElementById('btnAceitarTermos').style.display = 'flex';
+  document.getElementById('linkFecharTermos').style.display = 'none';
+  go('termos');
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+
+</body>
+</html>
