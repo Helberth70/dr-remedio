@@ -1387,10 +1387,29 @@ function diasRestantes(r){
   const diff = Math.round((fim - hoje) / 86400000);
   return diff > 0 ? diff : 1;
 }
-function baixarICS(conteudo, nomeArquivo){
-  // Usa data: URI em vez de blob: — o Safari do iPhone tem um problema conhecido em que
-  // arquivos .ics gerados via blob: às vezes não entregam para o app Calendário (falha silenciosa).
-  // data: URI é a alternativa documentada que funciona de forma mais confiável no iOS.
+async function baixarICS(conteudo, nomeArquivo){
+  // Descoberta importante: no iPhone, quando o app está instalado na tela de início
+  // (modo "standalone" do PWA), o download de arquivo pelo navegador é uma função
+  // quebrada/muito restrita do próprio iOS/Safari — é uma limitação documentada da Apple
+  // (bug aberto no WebKit desde 2024), que afeta TANTO blob: quanto data:, e explica por
+  // que às vezes funciona (testando fora do app instalado) e às vezes não (dentro dele).
+  //
+  // A solução mais confiável dentro do app instalado é usar a Central de Compartilhamento
+  // nativa do iOS (Web Share API), que é um mecanismo do sistema operacional, não do
+  // navegador — não sofre dessa restrição. O usuário toca em "Compartilhar" e escolhe
+  // "Adicionar ao Calendário", "Salvar em Arquivos", etc.
+  try{
+    const arquivo = new File([conteudo], nomeArquivo, { type: 'text/calendar' });
+    if(navigator.canShare && navigator.canShare({ files: [arquivo] })){
+      await navigator.share({ files: [arquivo] });
+      return;
+    }
+  } catch(e){
+    if(e && e.name === 'AbortError') return; // o usuário cancelou de propósito — respeita a escolha
+    // qualquer outro erro (ou falta de suporte) cai no método abaixo
+  }
+  // Método alternativo (funciona bem fora do modo instalado do iPhone, e no Android/desktop):
+  // link de download com data: URI.
   const dataUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(conteudo);
   const a = document.createElement('a');
   a.href = dataUri; a.download = nomeArquivo;
@@ -1633,6 +1652,60 @@ function renderCartaoAvulsos(){
     '</div>';
   }).join('');
 }
+/* ---------- Ícone visual de cápsula para a dose, no Cartão do Paciente impresso ---------- */
+/* Pensado para quem não sabe ler: em vez de escrever "1 comprimido", "2 comprimidos" ou
+   "1/2 comprimido", desenha a quantidade de cápsulas (vermelho em cima, amarelo embaixo). */
+let capsulaIdCounter = 0;
+function capsulaSVG(){
+  capsulaIdCounter++;
+  const clipId = 'capClip' + capsulaIdCounter;
+  return '<svg viewBox="0 0 20 32" width="18" height="29" style="vertical-align:-8px;" aria-hidden="true">' +
+    '<defs><clipPath id="'+clipId+'"><rect x="1" y="1" width="18" height="30" rx="9" ry="9"></rect></clipPath></defs>' +
+    '<g clip-path="url(#'+clipId+')">' +
+      '<rect x="1" y="1" width="18" height="15" fill="#e02424"></rect>' +
+      '<rect x="1" y="16" width="18" height="15" fill="#f5c518"></rect>' +
+    '</g>' +
+    '<rect x="1" y="1" width="18" height="30" rx="9" ry="9" fill="none" stroke="#00000030" stroke-width="1"></rect>' +
+  '</svg>';
+}
+function capsulaMeiaSVG(){
+  capsulaIdCounter++;
+  const clipId = 'capClipHalf' + capsulaIdCounter;
+  // Cápsula "partida": mostra só a metade esquerda, com uma linha tracejada marcando a quebra.
+  return '<svg viewBox="0 0 20 32" width="18" height="29" style="vertical-align:-8px;" aria-hidden="true">' +
+    '<defs><clipPath id="'+clipId+'"><rect x="1" y="1" width="9" height="30" rx="9" ry="9"></rect></clipPath></defs>' +
+    '<g clip-path="url(#'+clipId+')">' +
+      '<rect x="1" y="1" width="18" height="15" fill="#e02424"></rect>' +
+      '<rect x="1" y="16" width="18" height="15" fill="#f5c518"></rect>' +
+    '</g>' +
+    '<rect x="1" y="1" width="9" height="30" rx="9" ry="9" fill="none" stroke="#00000030" stroke-width="1"></rect>' +
+    '<line x1="10" y1="1" x2="10" y2="31" stroke="#00000055" stroke-width="1.2" stroke-dasharray="2,2"></line>' +
+  '</svg>';
+}
+function parseDoseParaCapsulas(doseTexto){
+  const t = (doseTexto || '').toLowerCase().trim();
+  if(!/comprimido|c[áa]psula|dr[áa]gea/.test(t)) return null;
+  if(/^(meio|meia|1\/2|0[.,]5)\s*(comprimido|c[áa]psula|dr[áa]gea)/.test(t)){
+    return { inteiras: 0, meia: true };
+  }
+  let m = t.match(/^(\d+)\s*(?:e\s*)?(?:1\/2|,5|\.5)\s*(comprimido|c[áa]psula|dr[áa]gea)/);
+  if(m) return { inteiras: parseInt(m[1], 10), meia: true };
+  m = t.match(/^(\d+)\s*(comprimido|c[áa]psula|dr[áa]gea)/);
+  if(m) return { inteiras: parseInt(m[1], 10), meia: false };
+  return null;
+}
+function doseVisual(doseTexto){
+  const parsed = parseDoseParaCapsulas(doseTexto);
+  if(!parsed || (!parsed.inteiras && !parsed.meia)) return (doseTexto || '');
+  let html = '';
+  if(parsed.inteiras > 6){
+    html += capsulaSVG() + ' <span style="font-size:16px;font-weight:800;vertical-align:6px;">× ' + parsed.inteiras + '</span>';
+  } else {
+    for(let i = 0; i < parsed.inteiras; i++) html += capsulaSVG();
+  }
+  if(parsed.meia) html += capsulaMeiaSVG() + ' <span style="font-size:16px;font-weight:800;vertical-align:6px;">1/2</span>';
+  return html;
+}
 function gerarCartaoPreview(){
   const salvos = getRemedios();
   const selecionados = Array.from(document.querySelectorAll('.chk-cartao-salvo:checked'))
@@ -1648,13 +1721,13 @@ function gerarCartaoPreview(){
     if(it.horariosCalculados && it.horariosCalculados.length){
       it.horariosCalculados.forEach(hm => {
         const emoji = horarioParaEmoji(hm);
-        linhas.push('<div class="row"><span style="font-size:30px;">'+emoji+'</span><b>'+it.nome+' — '+(it.dose||'')+' ('+hm+')</b></div>');
+        linhas.push('<div class="row"><span style="font-size:30px;">'+emoji+'</span><b>'+it.nome+'</b> '+doseVisual(it.dose)+' <b>('+hm+')</b></div>');
       });
     } else {
       const horarios = (it.horarios && it.horarios.length) ? it.horarios : ['manha'];
       horarios.forEach(h => {
         const emoji = HORARIO_EMOJI[h] || '💊';
-        linhas.push('<div class="row"><span style="font-size:30px;">'+emoji+'</span><b>'+it.nome+' — '+(it.dose||'')+'</b></div>');
+        linhas.push('<div class="row"><span style="font-size:30px;">'+emoji+'</span><b>'+it.nome+'</b> '+doseVisual(it.dose)+'</div>');
       });
     }
   });

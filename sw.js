@@ -1,4 +1,4 @@
-const CACHE_NAME = "dr-remedio-v11";
+const CACHE_NAME = "dr-remedio-v12";
 const ASSETS = [
   "./",
   "./index.html",
