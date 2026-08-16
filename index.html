@@ -493,6 +493,23 @@
       <div class="footer-link" onclick="go('home')">← Início</div>
     </div>
 
+    <!-- CONFIRMAR EXCLUSAO -->
+    <div class="pane" data-pane="confirmar-exclusao">
+      <div class="app-header"><h2>Excluir Remédio?</h2></div>
+      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
+      <div class="result-card" style="text-align:center;">
+        <div style="font-size:40px;">🗑️</div>
+        <p class="med-name" id="nomeExclusao">—</p>
+        <p class="med-sub">Isso não pode ser desfeito. Se o tratamento já acabou, tudo bem excluir.</p>
+      </div>
+      <button class="big-btn primary" onclick="confirmarExclusao()">
+        <span class="emoji">✅</span> Sim, Excluir
+      </button>
+      <button class="big-btn outline" onclick="cancelarExclusao()">
+        <span class="emoji">❌</span> Cancelar
+      </button>
+    </div>
+
     <!-- PRO HOME -->
     <div class="pane" data-pane="pro-home">
       <span class="badge-role">MODO PROFISSIONAL DE SAÚDE</span>
@@ -606,11 +623,23 @@ function horariosFalados(lista){
   return lista.map(h => HORARIO_LABEL[h] || h).join(', ');
 }
 
+function hojeISO(){
+  const d = new Date();
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+}
+function tratamentoProvavelmenteConcluido(r){
+  return !!(r.terminaEm && r.terminaEm < hojeISO());
+}
 function remediosResumoFala(){
   const lista = getRemedios();
   if(!lista.length) return 'Você ainda não tem remédios salvos.';
-  return 'Você tem ' + lista.length + ' remédio' + (lista.length>1?'s':'') + ' salvos. ' +
-    lista.map(r => r.nome + ', ' + (r.duracaoLabel||'')).join('. ');
+  const concluidos = lista.filter(tratamentoProvavelmenteConcluido).length;
+  let fala = 'Você tem ' + lista.length + ' remédio' + (lista.length>1?'s':'') + ' salvos. ' +
+    lista.map(r => r.nome + ', ' + (r.duracaoLabel||'')).join('. ') + '.';
+  if(concluidos > 0){
+    fala += ' Atenção: ' + concluidos + ' remédio' + (concluidos>1?'s parecem':' parece') + ' já ter terminado o tratamento. Você pode excluir se quiser, tocando na lixeira.';
+  }
+  return fala;
 }
 
 function paneText(id){
@@ -653,6 +682,11 @@ function paneText(id){
       return 'Você autoriza a farmacêutica a adicionar essa informação no seu aplicativo? Toque em sim, autorizo, ou não, obrigado.';
     case 'meus-remedios':
       return remediosResumoFala();
+    case 'confirmar-exclusao': {
+      const r = indiceParaExcluir !== null ? getRemedios()[indiceParaExcluir] : null;
+      const nome = r ? r.nome : 'este remédio';
+      return 'Tem certeza que quer excluir ' + nome + '? Isso não pode ser desfeito. Toque em sim, excluir, ou cancelar.';
+    }
     case 'pro-home':
       return 'Modo profissional de saúde. Escolha gerar cartão do paciente, ou modo farmácia.';
     case 'pro-cartao':
@@ -781,8 +815,14 @@ function getRemedios(){
   catch(e){ return []; }
 }
 
+function calcularDataFim(dias){
+  const d = new Date();
+  d.setDate(d.getDate() + dias);
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+}
+
 function salvarSemAlarme(){
-  const med = Object.assign({}, currentMed, { duracaoLabel:'Sem lembrete de calendário' });
+  const med = Object.assign({}, currentMed, { duracaoLabel:'Sem lembrete de calendário', criadoEm: hojeISO(), terminaEm: null });
   salvarRemedio(med);
   falar(med.nome + ' foi salvo em Meus Remédios.');
   go('meus-remedios');
@@ -790,14 +830,16 @@ function salvarSemAlarme(){
 
 function confirmarDuracao(tipo){
   if(tipo === 'sos'){
-    const med = Object.assign({}, currentMed, { duracaoLabel:'Se necessário' });
+    const med = Object.assign({}, currentMed, { duracaoLabel:'Se necessário', criadoEm: hojeISO(), terminaEm: null });
     salvarRemedio(med);
     go('salvo-sos');
     return;
   }
   const dias = tipo === 'temp' ? (currentMed.duracaoDias || 7) : null;
   const med = Object.assign({}, currentMed, {
-    duracaoLabel: tipo === 'temp' ? ('Por ' + dias + ' dias') : 'Uso contínuo'
+    duracaoLabel: tipo === 'temp' ? ('Por ' + dias + ' dias') : 'Uso contínuo',
+    criadoEm: hojeISO(),
+    terminaEm: tipo === 'temp' ? calcularDataFim(dias) : null
   });
   salvarRemedio(med);
 
@@ -825,17 +867,47 @@ function renderRemedios(){
   container.innerHTML = lista.map((r, i) => {
     const emoji = r.horarios && r.horarios.includes('noite') && !r.horarios.includes('manha') ? '🌙'
       : r.horarios && r.horarios.length ? '☀️' : '💊';
-    return '<div class="list-item">' +
+    const concluido = tratamentoProvavelmenteConcluido(r);
+    const avisoConcluido = concluido
+      ? '<div style="font-size:12px;color:var(--warn);font-weight:700;margin-top:2px;">✅ Tratamento já deve ter terminado</div>' : '';
+    return '<div class="list-item" style="align-items:flex-start;'+(concluido ? 'border-color:#f1d38a;background:#fffaf0;' : '')+'">' +
       '<div class="pictogram" style="width:48px;height:48px;font-size:22px;">'+emoji+'</div>' +
-      '<div class="info"><div class="name">'+r.nome+'</div><div class="time">'+(r.dose||'')+' — '+(r.duracaoLabel||'')+'</div></div>' +
-      '<button class="mini-listen" onclick="falarRemedio('+i+')" aria-label="Ouvir informações de '+r.nome+'">🔊</button>' +
+      '<div class="info"><div class="name">'+r.nome+'</div><div class="time">'+(r.dose||'')+' — '+(r.duracaoLabel||'')+'</div>'+avisoConcluido+'</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px;">' +
+        '<button class="mini-listen" onclick="falarRemedio('+i+')" aria-label="Ouvir informações de '+r.nome+'">🔊</button>' +
+        '<button class="mini-listen" style="background:var(--warn);" onclick="pedirExclusao('+i+')" aria-label="Excluir '+r.nome+'">🗑️</button>' +
+      '</div>' +
     '</div>';
   }).join('');
 }
 function falarRemedio(i){
   const r = getRemedios()[i];
   if(!r) return;
-  falar(r.nome + '. ' + (r.dose||'') + '. ' + (r.duracaoLabel||'') + '. Horários: ' + horariosFalados(r.horarios) + '.');
+  falar(r.nome + '. ' + (r.dose||'') + '. ' + (r.duracaoLabel||'') + '. Horários: ' + horariosFalados(r.horarios) + '.' +
+    (tratamentoProvavelmenteConcluido(r) ? ' Atenção: este tratamento já deve ter terminado. Você pode excluir se quiser.' : ''));
+}
+
+let indiceParaExcluir = null;
+function pedirExclusao(i){
+  const r = getRemedios()[i];
+  if(!r) return;
+  indiceParaExcluir = i;
+  document.getElementById('nomeExclusao').textContent = r.nome;
+  go('confirmar-exclusao');
+}
+function confirmarExclusao(){
+  if(indiceParaExcluir === null) { go('meus-remedios'); return; }
+  const lista = getRemedios();
+  const removido = lista[indiceParaExcluir];
+  lista.splice(indiceParaExcluir, 1);
+  localStorage.setItem('meusRemedios', JSON.stringify(lista));
+  indiceParaExcluir = null;
+  falar((removido ? removido.nome + ' excluído.' : 'Excluído.') + ' Voltando para Meus Remédios.');
+  go('meus-remedios');
+}
+function cancelarExclusao(){
+  indiceParaExcluir = null;
+  go('meus-remedios');
 }
 
 /* ---------- Termo de Uso ---------- */
