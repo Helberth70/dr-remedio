@@ -315,9 +315,62 @@
       </div>
     </div>
 
-    <!-- CONFIRMAR LEITURA (OCR) -->
+    <!-- RECEITA: CABEÇALHO (paciente/médico) -->
+    <div class="pane" data-pane="receita-cabecalho">
+      <div class="app-header"><h2>Dados da Receita</h2></div>
+      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
+      <div class="result-card">
+        <p class="med-sub" style="margin:0 0 8px;"><b>Texto que reconheci na foto:</b></p>
+        <div style="max-height:120px;overflow:auto;background:var(--bg);border-radius:12px;padding:10px;font-size:13px;color:var(--muted);white-space:pre-wrap;line-height:1.5;" id="textoOcrCabecalho">—</div>
+      </div>
+      <div class="result-card">
+        <span class="field-label">Nome do paciente</span>
+        <input type="text" id="confPaciente" class="field-input" placeholder="Digite o nome do paciente">
+        <span class="field-label">Nome do médico</span>
+        <input type="text" id="confMedicoNome" class="field-input" placeholder="Digite o nome do médico">
+        <span class="field-label">CRM (opcional)</span>
+        <input type="text" id="confMedicoCrm" class="field-input" placeholder="Ex: 12345-SP">
+      </div>
+      <p class="med-sub" style="margin:0 0 16px;">Os remédios desta receita são adicionados na próxima tela, um de cada vez, pelo profissional de saúde.</p>
+      <button class="big-btn outline" onclick="ouvirTextoOcrCabecalho()">
+        <span class="emoji">🔊</span> Ouvir Texto Lido de Novo
+      </button>
+      <button class="big-btn primary" onclick="confirmarCabecalho()">
+        <span class="emoji">✅</span> Continuar
+      </button>
+      <div class="footer-link" onclick="go('home')">← Início</div>
+    </div>
+
+    <!-- MEDICAMENTO: ENTRADA MANUAL -->
+    <div class="pane" data-pane="medicamento-novo">
+      <div class="app-header"><h2>Adicionar Remédio</h2></div>
+      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
+      <p class="med-sub" id="contextoReceitaTxt" style="margin:0 0 12px;"></p>
+      <div class="result-card">
+        <span class="field-label">Nome do remédio</span>
+        <input type="text" id="medNome" class="field-input" placeholder="Digite o nome do remédio">
+        <span class="field-label">Dose</span>
+        <input type="text" id="medDose" class="field-input" placeholder="Ex: 1 comprimido" value="1 comprimido">
+        <span class="field-label">Horário (texto livre, opcional)</span>
+        <input type="text" id="medHorarioTexto" class="field-input" placeholder="Ex: de 8 em 8 horas">
+        <span class="field-label">Horários do dia</span>
+        <div style="margin-top:4px;margin-bottom:12px;">
+          <span class="toggle-chip" data-chipm="manha" onclick="toggleChipMed(this,'manha')">☀️ Manhã</span>
+          <span class="toggle-chip" data-chipm="tarde" onclick="toggleChipMed(this,'tarde')">🌤️ Tarde</span>
+          <span class="toggle-chip" data-chipm="noite" onclick="toggleChipMed(this,'noite')">🌙 Noite</span>
+        </div>
+        <span class="field-label">Duração do tratamento (em dias — deixe em branco se for contínuo)</span>
+        <input type="number" id="medDias" class="field-input" min="0" placeholder="Ex: 7">
+      </div>
+      <button class="big-btn primary" onclick="salvarMedicamentoNovo()">
+        <span class="emoji">➡️</span> Continuar
+      </button>
+      <div class="footer-link" onclick="go('home')">← Início</div>
+    </div>
+
+    <!-- CONFIRMAR LEITURA (OCR — usado pela Caixa de Remédio) -->
     <div class="pane" data-pane="confirmar-leitura">
-      <div class="app-header"><h2 id="tituloConfirmar">Confira o que eu li</h2></div>
+      <div class="app-header"><h2>Confira o Remédio</h2></div>
       <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
       <div class="result-card">
         <p class="med-sub" style="margin:0 0 8px;"><b>Texto que reconheci na foto:</b></p>
@@ -349,41 +402,11 @@
       <div class="footer-link" onclick="go('home')">← Início</div>
     </div>
 
-    <!-- RECEITA: RESULTADO -->
-    <div class="pane" data-pane="receita-resultado">
-      <div class="app-header"><h2>Confirmado</h2></div>
-      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
-      <div class="result-card">
-        <div class="pill-row">
-          <div class="pictogram" id="resPictograma">☀️</div>
-          <div>
-            <p class="med-name" id="resNome">—</p>
-            <p class="med-sub" id="resDoseHorario">—</p>
-          </div>
-        </div>
-        <div class="divider"></div>
-        <p class="med-sub" style="margin:0;" id="resDuracaoTxt">🗓️ Duração: —</p>
-      </div>
-      <div class="result-card" id="medicoCard" style="display:none;">
-        <p class="med-sub" style="margin:0;">👨‍⚕️ Receita de <b id="medicoNome"></b> — CRM <span id="medicoCrm"></span></p>
-      </div>
-      <button class="big-btn primary" onclick="repetir()">
-        <span class="emoji">🔊</span> Ouvir de Novo
-      </button>
-      <button class="big-btn secondary" onclick="go('duracao-tratamento')">
-        <span class="emoji">📅</span> Adicionar ao Calendário
-      </button>
-      <button class="big-btn" onclick="salvarSemAlarme()">
-        <span class="emoji">💾</span> Salvar em Meus Remédios
-      </button>
-      <div class="footer-link" onclick="go('home')">← Início</div>
-    </div>
-
     <!-- DURACAO -->
     <div class="pane" data-pane="duracao-tratamento">
       <div class="app-header"><h2>Por quanto tempo?</h2></div>
       <div class="speak-badge">🔊 Escolha uma opção</div>
-      <button class="big-btn primary" onclick="confirmarDuracao('temp')">
+      <button class="big-btn primary" id="btnDuracaoTemp" onclick="confirmarDuracao('temp')">
         <span class="emoji">📅</span> Por tempo determinado (7 dias)
       </button>
       <button class="big-btn secondary" onclick="confirmarDuracao('continuo')">
@@ -392,8 +415,8 @@
       <button class="big-btn" onclick="confirmarDuracao('sos')">
         <span class="emoji">🤒</span> Se necessário (sem horário fixo)
       </button>
-      <p class="med-sub" style="text-align:center;margin-top:4px;">A duração vem da receita — se detectar errado, corrija aqui antes de salvar.</p>
-      <div class="footer-link" onclick="go('receita-resultado')">← Voltar</div>
+      <p class="med-sub" style="text-align:center;margin-top:4px;">Confirme a duração indicada na receita antes de salvar.</p>
+      <div class="footer-link" onclick="voltarDeDuracao()">← Voltar</div>
     </div>
 
     <!-- CALENDARIO -->
@@ -405,8 +428,11 @@
         <p class="med-sub" id="calendarioDetalhe">—</p>
       </div>
       <p class="med-sub" style="text-align:center;">Um arquivo de calendário (.ics) foi baixado. Toque nele para adicionar ao Calendário do seu celular.</p>
-      <button class="big-btn primary" onclick="go('home')">
-        <span class="emoji">🏠</span> Voltar ao Início
+      <button class="big-btn secondary" onclick="adicionarOutroRemedio()">
+        <span class="emoji">➕</span> Adicionar Outro Remédio desta Receita
+      </button>
+      <button class="big-btn primary" onclick="go('meus-remedios')">
+        <span class="emoji">✅</span> Concluir — Ver Meus Remédios
       </button>
     </div>
 
@@ -418,8 +444,11 @@
         <p class="med-name">Sem alarme fixo</p>
         <p class="med-sub">Este remédio é "se necessário" — vai ficar guardado em Meus Remédios pra você ouvir de novo sempre que precisar usar.</p>
       </div>
-      <button class="big-btn primary" onclick="go('home')">
-        <span class="emoji">🏠</span> Voltar ao Início
+      <button class="big-btn secondary" onclick="adicionarOutroRemedio()">
+        <span class="emoji">➕</span> Adicionar Outro Remédio desta Receita
+      </button>
+      <button class="big-btn primary" onclick="go('meus-remedios')">
+        <span class="emoji">✅</span> Concluir — Ver Meus Remédios
       </button>
     </div>
 
@@ -644,6 +673,10 @@ function go(paneId){
   if(target) target.classList.add('active');
   currentPane = paneId;
   if(paneId === 'meus-remedios') renderRemedios();
+  if(paneId === 'duracao-tratamento'){
+    const dias = currentMed.duracaoDias || 7;
+    document.getElementById('btnDuracaoTemp').innerHTML = '<span class="emoji">📅</span> Por tempo determinado (' + dias + ' dias)';
+  }
   falar(paneText(paneId));
 }
 
@@ -685,6 +718,15 @@ function paneText(id){
       return 'Aponte a câmera para o QR code da receita e toque no quadro escuro para escanear.';
     case 'receita-loading':
       return 'Um momento, estou lendo o texto da receita. Isso pode levar alguns segundos.';
+    case 'receita-cabecalho': {
+      let fala = ocrTextoAtual
+        ? ('Veja o texto que eu consegui ler: ' + ocrTextoAtual + '.')
+        : 'Não consegui reconhecer nenhum texto nesta foto.';
+      fala += ' Confira o nome do paciente e do médico, corrija se precisar, e toque em continuar.';
+      return fala;
+    }
+    case 'medicamento-novo':
+      return 'Digite o nome do remédio, a dose e os horários, e toque em continuar. Você pode adicionar mais de um remédio desta receita, um de cada vez.';
     case 'confirmar-leitura': {
       let fala = ocrTextoAtual
         ? ('Veja o texto que eu consegui ler: ' + ocrTextoAtual + '.')
@@ -692,22 +734,12 @@ function paneText(id){
       fala += ' Confira os campos abaixo, corrija o que precisar, e toque em está certo, continuar.';
       return fala;
     }
-    case 'receita-resultado': {
-      let fala = 'Confirmado. ' + (currentMed.nome||'Remédio') + '. ' + (currentMed.dose||'') + '. ' +
-        (currentMed.horarioTextoLivre || horariosFalados(currentMed.horarios)) + '.';
-      fala += currentMed.duracaoDias ? (' Duração: ' + currentMed.duracaoDias + ' dias.') : ' Duração contínua ou não detectada — confirme na próxima tela.';
-      if(currentMed.medico){
-        fala += ' Receita de ' + currentMed.medico.nome + ', C R M ' + currentMed.medico.crm + '.';
-      }
-      fala += ' Toque em ouvir de novo, adicionar ao calendário, ou salvar.';
-      return fala;
-    }
     case 'duracao-tratamento':
       return 'Este remédio é por um tempo certo, para sempre, ou só se precisar? Escolha uma das três opções.';
     case 'calendario':
-      return calendarioFalaAtual || 'Lembrete criado e adicionado ao calendário.';
+      return (calendarioFalaAtual || 'Lembrete criado e adicionado ao calendário.') + ' Toque em adicionar outro remédio desta receita, ou concluir para ver seus remédios.';
     case 'salvo-sos':
-      return (currentMed.nome || 'O remédio') + ' foi salvo em Meus Remédios, sem alarme fixo. Use quando precisar.';
+      return (currentMed.nome || 'O remédio') + ' foi salvo em Meus Remédios, sem alarme fixo. Toque em adicionar outro remédio desta receita, ou concluir para ver seus remédios.';
     case 'caixa-camera':
       return 'Aponte a câmera para o código de barras da caixa e toque no quadro escuro para tirar a foto.';
     case 'caixa-loading':
@@ -737,16 +769,6 @@ function paneText(id){
 }
 
 /* ---------- Fluxo Receita ---------- */
-function atualizarCardMedico(){
-  const card = document.getElementById('medicoCard');
-  if(currentMed.medico){
-    document.getElementById('medicoNome').textContent = currentMed.medico.nome;
-    document.getElementById('medicoCrm').textContent = currentMed.medico.crm;
-    card.style.display = 'block';
-  } else {
-    card.style.display = 'none';
-  }
-}
 
 /* ---------- OCR real (Tesseract.js) ---------- */
 let ocrTextoAtual = '';
@@ -766,23 +788,20 @@ async function reconhecerTexto(file){
   }
 }
 
-function parseTextoReceita(texto){
-  const t = texto || '';
-  const linhas = t.split('\n').map(l => l.trim()).filter(Boolean);
-  const resultado = { nome:'', dose:'1 comprimido', horarios:[], dias:null };
+function parseCabecalhoReceita(texto){
+  const linhas = (texto || '').split('\n').map(l => l.trim()).filter(Boolean);
+  const resultado = { paciente:'', medicoNome:'', medicoCrm:'' };
   for(const linha of linhas){
-    const mNome = linha.match(/([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,30}?)\s*(\d+\s?mg|\d+\s?g|\d+\s?ml)/i);
-    if(mNome){ resultado.nome = (mNome[1].trim() + ' ' + mNome[2].replace(/\s+/g,'')).trim(); break; }
+    const mPaciente = linha.match(/paciente\s*[:\-]?\s*(.{2,60})/i);
+    if(mPaciente && !resultado.paciente) resultado.paciente = mPaciente[1].trim();
+    const mMedico = linha.match(/\bdr\.?a?\.?\s+([A-Za-zÀ-ÿ\s]{3,40})/i);
+    if(mMedico && !resultado.medicoNome){
+      const prefixo = /dra\.?\s/i.test(linha) ? 'Dra. ' : 'Dr. ';
+      resultado.medicoNome = (prefixo + mMedico[1].trim()).replace(/\s+/g,' ').trim();
+    }
+    const mCrm = linha.match(/crm[\/\-\s]*\w{0,4}\s*[:\-]?\s*([\d.\-\/A-Za-z]{3,15})/i);
+    if(mCrm && !resultado.medicoCrm) resultado.medicoCrm = mCrm[1].trim();
   }
-  const mDose = t.match(/(\d+\/?\d*)\s*comprimido[s]?/i);
-  if(mDose) resultado.dose = mDose[0];
-  const mDias = t.match(/por\s+(\d{1,3})\s*dias?/i);
-  if(mDias) resultado.dias = parseInt(mDias[1], 10);
-  const low = t.toLowerCase();
-  if(low.includes('manh')) resultado.horarios.push('manha');
-  if(low.includes('tarde')) resultado.horarios.push('tarde');
-  if(low.includes('noite')) resultado.horarios.push('noite');
-  if(!resultado.horarios.length) resultado.horarios.push('manha');
   return resultado;
 }
 function parseTextoCaixa(texto){
@@ -796,11 +815,75 @@ function parseTextoCaixa(texto){
   return resultado;
 }
 
-function abrirConfirmarLeitura(ok, avisoTexto){
-  document.getElementById('tituloConfirmar').textContent = origemLeitura === 'caixa' ? 'Confira o remédio' : 'Confira a receita';
+/* --- Fluxo Receita: cabeçalho (paciente/médico) + remédios adicionados manualmente --- */
+let receitaContexto = { paciente:'', medico:null };
+let chipsMedNovo = new Set();
+
+function abrirReceitaCabecalho(){
+  document.getElementById('textoOcrCabecalho').textContent = ocrTextoAtual || 'Não consegui reconhecer nenhum texto nesta foto. Preencha os dados manualmente abaixo.';
+  document.getElementById('confPaciente').value = receitaContexto.paciente || '';
+  document.getElementById('confMedicoNome').value = receitaContexto.medico ? (receitaContexto.medico.nome||'') : '';
+  document.getElementById('confMedicoCrm').value = receitaContexto.medico ? (receitaContexto.medico.crm||'') : '';
+  go('receita-cabecalho');
+}
+function ouvirTextoOcrCabecalho(){
+  falar(ocrTextoAtual ? ('Texto reconhecido: ' + ocrTextoAtual) : 'Não consegui reconhecer nenhum texto nesta foto.');
+}
+function confirmarCabecalho(){
+  const paciente = document.getElementById('confPaciente').value.trim();
+  const medicoNome = document.getElementById('confMedicoNome').value.trim();
+  const medicoCrm = document.getElementById('confMedicoCrm').value.trim();
+  receitaContexto = { paciente, medico: medicoNome ? { nome:medicoNome, crm:medicoCrm } : null };
+  abrirMedicamentoNovo();
+}
+function abrirMedicamentoNovo(){
+  document.getElementById('medNome').value = '';
+  document.getElementById('medDose').value = '1 comprimido';
+  document.getElementById('medHorarioTexto').value = '';
+  document.getElementById('medDias').value = '';
+  chipsMedNovo = new Set();
+  document.querySelectorAll('[data-pane="medicamento-novo"] .toggle-chip').forEach(chip => chip.classList.remove('on'));
+  const partes = [];
+  if(receitaContexto.paciente) partes.push('Paciente: ' + receitaContexto.paciente);
+  if(receitaContexto.medico && receitaContexto.medico.nome) partes.push('Médico: ' + receitaContexto.medico.nome);
+  document.getElementById('contextoReceitaTxt').textContent = partes.length ? ('📋 ' + partes.join(' — ')) : '';
+  go('medicamento-novo');
+}
+function toggleChipMed(el, valor){
+  el.classList.toggle('on');
+  if(chipsMedNovo.has(valor)) chipsMedNovo.delete(valor);
+  else chipsMedNovo.add(valor);
+}
+function salvarMedicamentoNovo(){
+  const nome = document.getElementById('medNome').value.trim() || 'Remédio';
+  const dose = document.getElementById('medDose').value.trim() || '1 comprimido';
+  const horarioTextoLivre = document.getElementById('medHorarioTexto').value.trim();
+  const diasStr = document.getElementById('medDias').value.trim();
+  const dias = diasStr ? parseInt(diasStr, 10) : null;
+  currentMed = {
+    nome, dose, horarioTextoLivre,
+    horarios: Array.from(chipsMedNovo),
+    origem: origemLeitura === 'qr' ? 'QR Code (Receita Memed)' : 'Receita (foto)',
+    duracaoDias: dias,
+    medico: receitaContexto.medico || null,
+    paciente: receitaContexto.paciente || ''
+  };
+  go('duracao-tratamento');
+}
+function voltarDeDuracao(){
+  if(origemLeitura === 'caixa') go('caixa-resultado');
+  else go('medicamento-novo');
+}
+function adicionarOutroRemedio(){
+  if(origemLeitura === 'caixa') go('caixa-camera');
+  else abrirMedicamentoNovo();
+}
+
+/* --- Fluxo Caixa: confirma leitura (OCR) --- */
+function abrirConfirmarLeitura(ok){
   document.getElementById('textoOcrBruto').textContent = ocrTextoAtual || 'Não consegui reconhecer nenhum texto nesta foto. Digite as informações manualmente abaixo.';
   document.getElementById('avisoOcr').textContent = !ok
-    ? ('⚠️ ' + (avisoTexto || 'Não consegui ler automaticamente. Confira e preencha os campos com atenção antes de continuar.'))
+    ? '⚠️ Não consegui ler automaticamente. Confira e preencha os campos com atenção antes de continuar.'
     : '✅ Confira se está tudo certo antes de continuar — corrija qualquer campo se precisar.';
   document.getElementById('confNome').value = currentMed.nome || '';
   document.getElementById('confDose').value = currentMed.dose || '';
@@ -812,22 +895,13 @@ function abrirConfirmarLeitura(ok, avisoTexto){
   });
   go('confirmar-leitura');
 }
+function ouvirTextoOcr(){
+  falar(ocrTextoAtual ? ('Texto reconhecido: ' + ocrTextoAtual) : 'Não consegui reconhecer nenhum texto nesta foto.');
+}
 function toggleChipConf(el, valor){
   el.classList.toggle('on');
   if(chipsConfirmar.has(valor)) chipsConfirmar.delete(valor);
   else chipsConfirmar.add(valor);
-}
-function ouvirTextoOcr(){
-  falar(ocrTextoAtual ? ('Texto reconhecido: ' + ocrTextoAtual) : 'Não consegui reconhecer nenhum texto nesta foto.');
-}
-function atualizarResultadoReceita(){
-  document.getElementById('resNome').textContent = currentMed.nome || 'Remédio';
-  const horarioTxt = currentMed.horarioTextoLivre || horariosFalados(currentMed.horarios);
-  document.getElementById('resDoseHorario').textContent = (currentMed.dose||'') + ' — ' + horarioTxt;
-  document.getElementById('resPictograma').textContent =
-    (currentMed.horarios||[]).includes('noite') && !(currentMed.horarios||[]).includes('manha') ? '🌙' : '☀️';
-  document.getElementById('resDuracaoTxt').textContent = '🗓️ Duração: ' +
-    (currentMed.duracaoDias ? (currentMed.duracaoDias + ' dias') : 'contínuo ou não detectada — confirme na próxima tela');
 }
 function atualizarCaixaResultado(){
   document.getElementById('caixaResNome').textContent = currentMed.nome || 'Remédio';
@@ -844,14 +918,8 @@ function confirmarLeitura(){
     horarios: Array.from(chipsConfirmar),
     duracaoDias: dias
   });
-  if(origemLeitura === 'caixa'){
-    atualizarCaixaResultado();
-    go('caixa-resultado');
-  } else {
-    atualizarCardMedico();
-    atualizarResultadoReceita();
-    go('receita-resultado');
-  }
+  atualizarCaixaResultado();
+  go('caixa-resultado');
 }
 
 async function onFotoReceita(){
@@ -860,24 +928,17 @@ async function onFotoReceita(){
   go('receita-loading');
   const r = await reconhecerTexto(file);
   ocrTextoAtual = r.texto;
-  const guess = parseTextoReceita(ocrTextoAtual);
-  currentMed = {
-    nome: guess.nome, dose: guess.dose, horarios: guess.horarios,
-    origem:'Receita (foto)', duracaoDias: guess.dias || 7, medico:null
-  };
-  abrirConfirmarLeitura(r.ok);
+  const cab = parseCabecalhoReceita(ocrTextoAtual);
+  receitaContexto = { paciente: cab.paciente, medico: cab.medicoNome ? { nome: cab.medicoNome, crm: cab.medicoCrm } : null };
+  abrirReceitaCabecalho();
 }
 function onQRReceita(){
   origemLeitura = 'qr';
-  ocrTextoAtual = '';
-  currentMed = {
-    nome:'Losartana 50mg', dose:'1 comprimido', horarios:['manha','noite'], origem:'QR Code (Receita Memed)',
-    duracaoDias:7,
-    medico:{ nome:'Dra. Ana Souza', crm:'12345-SP' }
-  };
   go('receita-loading');
   setTimeout(() => {
-    abrirConfirmarLeitura(false, 'A leitura automática do QR Code da Memed ainda está em desenvolvimento — estes são dados de exemplo. Confira e corrija com o paciente antes de continuar.');
+    ocrTextoAtual = 'A leitura automática do QR Code da Memed ainda está em desenvolvimento. Preencha os dados abaixo com o paciente.';
+    receitaContexto = { paciente:'', medico:null };
+    abrirReceitaCabecalho();
   }, 700);
 }
 
