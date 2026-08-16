@@ -234,9 +234,6 @@
       <button class="big-btn primary" onclick="go('receita-metodo')">
         <span class="emoji">📷</span> Fotografar Receita
       </button>
-      <button class="big-btn secondary" onclick="go('caixa-camera')">
-        <span class="emoji">📦</span> Fotografar Caixa de Remédio
-      </button>
       <button class="big-btn" onclick="go('meus-remedios')">
         <span class="emoji">📋</span> Meus Remédios
       </button>
@@ -245,6 +242,7 @@
       </button>
       <p class="med-sub" style="text-align:center;margin-top:-6px;">Para médicos, farmacêuticos e estudantes de saúde</p>
       <div class="footer-link" onclick="verTermos()">Termo de Uso e Privacidade</div>
+      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px;">Versão 2026.1.13</p>
     </div>
 
     <!-- TERMO DE USO -->
@@ -373,6 +371,20 @@
         <span class="field-label">Dose</span>
         <input type="text" id="medDose" class="field-input" placeholder="Ex: 1 comprimido" value="1 comprimido">
 
+        <span class="field-label">Foto da caixa do remédio (opcional)</span>
+        <p class="med-sub" style="margin:0 0 8px;">Ajuda quem não sabe ler a reconhecer a caixa certa, comparando com a foto — não tenta identificar o remédio sozinho.</p>
+        <div id="medFotoPreviewWrap" style="display:none;text-align:center;margin:0 0 12px;">
+          <img id="medFotoPreview" src="" alt="Foto da caixa do remédio" style="max-width:150px;max-height:150px;border-radius:14px;border:2px solid var(--line);object-fit:cover;">
+          <div style="margin-top:6px;">
+            <span class="footer-link" style="display:inline;color:var(--warn);margin:0;" onclick="removerFotoMed()">🗑️ Remover foto</span>
+          </div>
+        </div>
+        <label class="camera-tile" for="medFoto" id="medFotoTile" style="padding:14px;margin:0 0 14px;height:90px;">
+          <span class="big-emoji" style="font-size:32px;margin-bottom:4px;">📷</span>
+          Toque para tirar foto da caixa
+        </label>
+        <input type="file" id="medFoto" accept="image/*" capture="environment" class="sr-only" onchange="onFotoMedNovo()">
+
         <label style="display:flex;align-items:flex-start;gap:8px;margin:14px 0 4px;font-size:14px;font-weight:600;">
           <input type="checkbox" id="medSemIntervalo" onchange="toggleSemIntervalo()" style="width:22px;height:22px;flex-shrink:0;margin-top:1px;">
           <span>Não há horário fixo em horas — é só um período do dia (ex: 3x ao dia)</span>
@@ -415,66 +427,6 @@
       <div class="footer-link" onclick="cancelarFluxoMedNovo()">← Início</div>
     </div>
 
-    <!-- CONFIRMAR LEITURA (OCR — usado pela Caixa de Remédio) -->
-    <div class="pane" data-pane="confirmar-leitura">
-      <div class="app-header"><h2>Confira o Remédio</h2></div>
-      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
-      <div class="result-card">
-        <p class="med-sub" style="margin:0 0 8px;"><b>Texto que reconheci na foto:</b></p>
-        <div style="max-height:130px;overflow:auto;background:var(--bg);border-radius:12px;padding:10px;font-size:13px;color:var(--muted);white-space:pre-wrap;line-height:1.5;" id="textoOcrBruto">—</div>
-      </div>
-      <p class="med-sub" id="avisoOcr" style="margin:0 0 12px;"></p>
-      <div class="result-card">
-        <span class="field-label">Nome do remédio</span>
-        <input type="text" id="confNome" class="field-input" placeholder="Digite o nome do remédio">
-        <span class="field-label">Dose</span>
-        <input type="text" id="confDose" class="field-input" placeholder="Ex: 1 comprimido">
-
-        <label style="display:flex;align-items:flex-start;gap:8px;margin:14px 0 4px;font-size:14px;font-weight:600;">
-          <input type="checkbox" id="confSemIntervalo" onchange="toggleSemIntervaloConf()" style="width:22px;height:22px;flex-shrink:0;margin-top:1px;">
-          <span>Não há horário fixo em horas — é só um período do dia (ex: 3x ao dia)</span>
-        </label>
-
-        <div id="blocoIntervaloConf">
-          <span class="field-label">De quantas em quantas horas? *</span>
-          <input type="number" id="confIntervaloHoras" class="field-input" min="1" max="24" placeholder="Ex: 8" style="font-size:22px;font-weight:800;">
-          <p class="med-sub" style="margin:2px 0 10px;">O app vai calcular sozinho os próximos horários a partir da primeira dose.</p>
-          <span class="field-label">Que horas foi (ou vai ser) a primeira dose? (opcional agora — pode registrar depois em "Meus Remédios")</span>
-          <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;">
-            <div>
-              <span class="field-label" style="text-align:center;display:block;">Hora</span>
-              <input type="number" id="confPrimeiraHora" class="field-input" style="width:90px;text-align:center;" min="0" max="23" placeholder="9">
-            </div>
-            <div style="font-size:22px;font-weight:800;padding-bottom:14px;">:</div>
-            <div>
-              <span class="field-label" style="text-align:center;display:block;">Minuto</span>
-              <input type="number" id="confPrimeiroMinuto" class="field-input" style="width:90px;text-align:center;" min="0" max="59" placeholder="00">
-            </div>
-          </div>
-        </div>
-
-        <div id="blocoHorariosDiaConf" style="display:none;">
-          <span class="field-label">Horários do dia *</span>
-          <div style="margin-top:4px;margin-bottom:12px;">
-            <span class="toggle-chip" data-chipc="manha" onclick="toggleChipConf(this,'manha')">☀️ Manhã</span>
-            <span class="toggle-chip" data-chipc="tarde" onclick="toggleChipConf(this,'tarde')">🍽️ Tarde</span>
-            <span class="toggle-chip" data-chipc="noite" onclick="toggleChipConf(this,'noite')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.15em" aria-hidden="true"><path fill="#2563eb" d="M12.7 3.3c-4.4.6-7.8 4.4-7.8 9 0 5 4.1 9.1 9.1 9.1 3.1 0 5.9-1.6 7.5-4-.7.2-1.5.3-2.3.3-5 0-9.1-4.1-9.1-9.1 0-1.9.6-3.7 1.6-5.3z"></path><path fill="#2563eb" d="M18.6 4.1l.5 1.4 1.4.5-1.4.5-.5 1.4-.5-1.4-1.4-.5 1.4-.5z"></path><path fill="#2563eb" d="M20.6 9.6l.35.9.9.35-.9.35-.35.9-.35-.9-.9-.35.9-.35z"></path></svg> Noite</span>
-          </div>
-        </div>
-
-        <span class="field-label">Duração do tratamento (em dias — deixe em branco se for contínuo)</span>
-        <input type="number" id="confDias" class="field-input" min="0" placeholder="Ex: 7">
-        <p class="med-sub" style="margin:8px 0 0;color:var(--warn);" id="erroConfLeitura"></p>
-      </div>
-      <button class="big-btn outline" onclick="ouvirTextoOcr()">
-        <span class="emoji">🔊</span> Ouvir Texto Lido de Novo
-      </button>
-      <button class="big-btn primary" onclick="confirmarLeitura()">
-        <span class="emoji">✅</span> Está Certo, Continuar
-      </button>
-      <div class="footer-link" onclick="go('home')">← Início</div>
-    </div>
-
     <!-- DURACAO -->
     <div class="pane" data-pane="duracao-tratamento">
       <div class="app-header"><h2>Por quanto tempo?</h2></div>
@@ -500,7 +452,7 @@
         <p class="med-name">Adicionado ao Calendário</p>
         <p class="med-sub" id="calendarioDetalhe">—</p>
       </div>
-      <p class="med-sub" style="text-align:center;">Um arquivo de calendário (.ics) foi baixado. Toque nele para adicionar ao Calendário do seu celular.</p>
+      <p class="med-sub" style="text-align:center;">Vai abrir uma tela para escolher para onde enviar o lembrete. <b>No iPhone, toque em "Mail"</b>, envie para o seu próprio e-mail, e depois abra o anexo dentro do e-mail — essa é a forma mais confiável de adicionar ao Calendário. (No Android, pode tocar direto em "Salvar" ou no ícone do Calendário, se aparecer.)</p>
       <button class="big-btn secondary" onclick="adicionarOutroRemedio()">
         <span class="emoji">➕</span> Adicionar Outro Remédio desta Receita
       </button>
@@ -523,79 +475,6 @@
       <button class="big-btn primary" onclick="go('meus-remedios')">
         <span class="emoji">✅</span> Concluir — Ver Meus Remédios
       </button>
-    </div>
-
-    <!-- CAIXA: CAMERA -->
-    <div class="pane" data-pane="caixa-camera">
-      <div class="app-header"><h2>Fotografar Caixa</h2></div>
-      <div class="speak-badge">🔊 Aponte a câmera para o código de barras</div>
-      <label class="camera-tile" for="fotoCaixa">
-        <span class="big-emoji">📦</span>
-        Toque aqui para tirar a foto da caixa
-      </label>
-      <input type="file" id="fotoCaixa" accept="image/*" capture="environment" class="sr-only" onchange="onFotoCaixa()">
-      <div class="footer-link" onclick="go('home')">← Voltar</div>
-    </div>
-
-    <!-- CAIXA: LOADING -->
-    <div class="pane" data-pane="caixa-loading">
-      <div class="app-header"><h2>Identificando o remédio…</h2></div>
-      <div class="loading-box">
-        <div class="spinner"></div>
-        Buscando na base pública da Anvisa
-      </div>
-    </div>
-
-    <!-- CAIXA: RESULTADO -->
-    <div class="pane" data-pane="caixa-resultado">
-      <div class="app-header"><h2>Remédio Identificado</h2></div>
-      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
-      <div class="result-card">
-        <div class="pill-row">
-          <div class="pictogram">💊</div>
-          <div>
-            <p class="med-name" id="caixaResNome">—</p>
-            <p class="med-sub" id="caixaResSub">—</p>
-          </div>
-        </div>
-        <div class="divider"></div>
-        <p class="med-sub" style="margin:0;">⚠️ Tome somente com orientação. Consulte sempre o horário indicado por seu médico ou farmacêutico.</p>
-      </div>
-      <button class="big-btn primary" onclick="repetir()">
-        <span class="emoji">🔊</span> Ouvir de Novo
-      </button>
-      <button class="big-btn" onclick="go('duracao-tratamento')">
-        <span class="emoji">💾</span> Salvar em Meus Remédios
-      </button>
-      <button class="big-btn outline" id="btnAjustarFarmacia" style="display:none;" onclick="go('caixa-ajustar')">
-        <span class="emoji">✏️</span> Ajustar Dose/Horário (receita diferente da bula)
-      </button>
-      <div class="footer-link" onclick="go('home')">← Início</div>
-    </div>
-
-    <!-- CAIXA: AJUSTAR -->
-    <div class="pane" data-pane="caixa-ajustar">
-      <span class="badge-role badge-farmacia">📍 MODO FARMÁCIA</span>
-      <div class="app-header" style="text-align:left;margin-bottom:8px;">
-        <h2 style="margin:0;">Ajustar Informação</h2>
-        <p style="margin:6px 0 0;">Use quando a receita do médico pede algo diferente da bula padrão.</p>
-      </div>
-      <div class="result-card">
-        <span class="field-label">Dose</span>
-        <input type="text" id="inputDose" class="field-input" value="1/2 comprimido">
-        <span class="field-label">Horário (texto livre)</span>
-        <input type="text" id="inputHorarioTexto" class="field-input" value="De 12 em 12 horas">
-        <span class="field-label">Horários do dia (para o alarme)</span>
-        <div style="margin-top:4px;">
-          <span class="toggle-chip" data-chip="manha" onclick="toggleChip(this,'manha')">☀️ Manhã</span>
-          <span class="toggle-chip" data-chip="tarde" onclick="toggleChip(this,'tarde')">🍽️ Tarde</span>
-          <span class="toggle-chip" data-chip="noite" onclick="toggleChip(this,'noite')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.15em" aria-hidden="true"><path fill="#2563eb" d="M12.7 3.3c-4.4.6-7.8 4.4-7.8 9 0 5 4.1 9.1 9.1 9.1 3.1 0 5.9-1.6 7.5-4-.7.2-1.5.3-2.3.3-5 0-9.1-4.1-9.1-9.1 0-1.9.6-3.7 1.6-5.3z"></path><path fill="#2563eb" d="M18.6 4.1l.5 1.4 1.4.5-1.4.5-.5 1.4-.5-1.4-1.4-.5 1.4-.5z"></path><path fill="#2563eb" d="M20.6 9.6l.35.9.9.35-.9.35-.35.9-.35-.9-.9-.35.9-.35z"></path></svg> Noite</span>
-        </div>
-      </div>
-      <button class="big-btn primary" onclick="salvarAjusteFarmacia()">
-        <span class="emoji">💾</span> Salvar Ajuste
-      </button>
-      <div class="footer-link" onclick="go('caixa-resultado')">← Voltar</div>
     </div>
 
     <!-- AUTORIZACAO FARMACIA -->
@@ -850,7 +729,7 @@ function remediosResumoFala(){
 function paneText(id){
   switch(id){
     case 'home':
-      return 'Tela inicial. Toque em Fotografar Receita, Fotografar Caixa de Remédio, ou Meus Remédios.';
+      return 'Tela inicial. Toque em Fotografar Receita, ou Meus Remédios.';
     case 'termos':
       return 'Antes de começar. Este aplicativo é gratuito e ajuda você a entender o nome, a dose e o horário dos seus remédios, usando voz. Seus dados ficam guardados só no seu celular, nada é enviado para a internet nem guardado em nenhum servidor. Este aplicativo não substitui o médico ou o farmacêutico, e não tem responsabilidade sobre a receita ou sobre o remédio que você toma. Siga sempre a orientação do seu médico. Toque em entendi e aceito para continuar.';
     case 'receita-metodo':
@@ -874,28 +753,13 @@ function paneText(id){
     case 'receita-orientacoes':
       return 'Se o médico deu alguma orientação além dos remédios, como evitar bebida alcoólica, digite aqui. Se não tiver nenhuma, pode deixar em branco e tocar em continuar.';
     case 'medicamento-novo':
-      return 'Digite o nome do remédio e a dose. Informe de quantas em quantas horas ele deve ser tomado, ou marque a opção de período do dia se não houver horário fixo. Depois toque em continuar. Você pode adicionar mais de um remédio desta receita, um de cada vez.';
-    case 'confirmar-leitura': {
-      let fala = ocrTextoAtual
-        ? ('Veja o texto que eu consegui ler: ' + ocrTextoAtual + '.')
-        : 'Não consegui reconhecer nenhum texto nesta foto.';
-      fala += ' Confira os campos abaixo, corrija o que precisar, e toque em está certo, continuar.';
-      return fala;
-    }
+      return 'Digite o nome do remédio e a dose. Informe de quantas em quantas horas ele deve ser tomado, ou marque a opção de período do dia se não houver horário fixo. Se quiser, tire uma foto da caixa do remédio para ajudar a reconhecê-la depois. Depois toque em continuar. Você pode adicionar mais de um remédio desta receita, um de cada vez.';
     case 'duracao-tratamento':
       return 'Este remédio é por um tempo certo, para sempre, ou só se precisar? Escolha uma das três opções.';
     case 'calendario':
       return (calendarioFalaAtual || 'Lembrete criado e adicionado ao calendário.') + ' Toque em adicionar outro remédio desta receita, ou concluir para ver seus remédios.';
     case 'salvo-sos':
       return (currentMed.nome || 'O remédio') + ' foi salvo em Meus Remédios, sem alarme fixo. Toque em adicionar outro remédio desta receita, ou concluir para ver seus remédios.';
-    case 'caixa-camera':
-      return 'Aponte a câmera para o código de barras da caixa e toque no quadro escuro para tirar a foto.';
-    case 'caixa-loading':
-      return 'Um momento, estou lendo o texto da caixa do remédio. Isso pode levar alguns segundos.';
-    case 'caixa-resultado':
-      return 'Remédio identificado: ' + (currentMed.nome||'') + '. ' + (currentMed.dose||'') + '. Tome somente com orientação, e consulte sempre o horário indicado por seu médico ou farmacêutico.';
-    case 'caixa-ajustar':
-      return 'Ajuste a dose e o horário conforme a receita, diferente da bula padrão. Depois toque em salvar ajuste.';
     case 'auth-farmacia':
       return 'Você autoriza a farmacêutica a adicionar essa informação no seu aplicativo? Toque em sim, autorizo, ou não, obrigado.';
     case 'meus-remedios':
@@ -925,8 +789,7 @@ function paneText(id){
 
 /* ---------- OCR real (Tesseract.js) ---------- */
 let ocrTextoAtual = '';
-let origemLeitura = 'receita'; // 'receita' | 'caixa' | 'qr'
-let chipsConfirmar = new Set();
+let origemLeitura = 'receita'; // 'receita' | 'qr'
 
 async function reconhecerTexto(file){
   if(!file || typeof Tesseract === 'undefined'){
@@ -974,16 +837,6 @@ function parseCabecalhoReceita(texto){
       if(mEsp) resultado.especialidade = mEsp[1];
     }
   }
-  return resultado;
-}
-function parseTextoCaixa(texto){
-  const linhas = (texto || '').split('\n').map(l => l.trim()).filter(Boolean);
-  const resultado = { nome:'' };
-  for(const linha of linhas){
-    const mNome = linha.match(/([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,30}?)\s*(\d+\s?mg|\d+\s?g|\d+\s?ml)/i);
-    if(mNome){ resultado.nome = (mNome[1].trim() + ' ' + mNome[2].replace(/\s+/g,'')).trim(); break; }
-  }
-  if(!resultado.nome) resultado.nome = linhas[0] || '';
   return resultado;
 }
 
@@ -1035,6 +888,54 @@ function confirmarOrientacoes(){
   abrirMedicamentoNovo();
 }
 let edicaoIndice = null;
+let medFotoDataUrl = null;
+const MED_FOTO_MAX_LADO = 480;
+function comprimirImagem(file, maxLado){
+  return new Promise((resolve) => {
+    if(!file){ resolve(null); return; }
+    const leitor = new FileReader();
+    leitor.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if(w >= h && w > maxLado){ h = Math.round(h * (maxLado / w)); w = maxLado; }
+        else if(h > w && h > maxLado){ w = Math.round(w * (maxLado / h)); h = maxLado; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        try { resolve(canvas.toDataURL('image/jpeg', 0.72)); }
+        catch(err){ resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = e.target.result;
+    };
+    leitor.onerror = () => resolve(null);
+    leitor.readAsDataURL(file);
+  });
+}
+function mostrarFotoMedPreview(url){
+  document.getElementById('medFotoPreview').src = url;
+  document.getElementById('medFotoPreviewWrap').style.display = 'block';
+  document.getElementById('medFotoTile').style.display = 'none';
+}
+function removerFotoMed(){
+  medFotoDataUrl = null;
+  document.getElementById('medFoto').value = '';
+  document.getElementById('medFotoPreviewWrap').style.display = 'none';
+  document.getElementById('medFotoTile').style.display = 'flex';
+}
+async function onFotoMedNovo(){
+  const file = document.getElementById('medFoto').files[0];
+  if(!file) return;
+  const dataUrl = await comprimirImagem(file, MED_FOTO_MAX_LADO);
+  if(!dataUrl){
+    falar('Não consegui processar essa foto. Tente novamente.');
+    return;
+  }
+  medFotoDataUrl = dataUrl;
+  mostrarFotoMedPreview(dataUrl);
+}
 function toggleSemIntervalo(){
   const semIntervalo = document.getElementById('medSemIntervalo').checked;
   document.getElementById('blocoIntervalo').style.display = semIntervalo ? 'none' : 'block';
@@ -1054,6 +955,7 @@ function abrirMedicamentoNovo(){
   document.getElementById('medSemIntervalo').checked = false;
   document.getElementById('medDias').value = '';
   document.getElementById('erroMedNovo').textContent = '';
+  removerFotoMed();
   chipsMedNovo = new Set();
   document.querySelectorAll('[data-pane="medicamento-novo"] .toggle-chip').forEach(chip => chip.classList.remove('on'));
   toggleSemIntervalo();
@@ -1071,6 +973,8 @@ function pedirEdicaoRemedio(i){
   document.getElementById('medNome').value = r.nome || '';
   document.getElementById('medDose').value = r.dose || '1 comprimido';
   document.getElementById('medDias').value = r.duracaoDias || '';
+  if(r.foto){ medFotoDataUrl = r.foto; mostrarFotoMedPreview(r.foto); }
+  else { removerFotoMed(); }
   const semIntervalo = !r.intervaloHoras;
   document.getElementById('medSemIntervalo').checked = semIntervalo;
   document.getElementById('medIntervaloHoras').value = r.intervaloHoras || '';
@@ -1139,110 +1043,16 @@ function salvarMedicamentoNovo(){
     duracaoDias: dias,
     medico: receitaContexto.medico || null,
     paciente: receitaContexto.paciente || '',
-    orientacoes: receitaContexto.orientacoes || ''
+    orientacoes: receitaContexto.orientacoes || '',
+    foto: medFotoDataUrl || null
   };
   go('duracao-tratamento');
 }
 function voltarDeDuracao(){
-  if(origemLeitura === 'caixa') go('caixa-resultado');
-  else go('medicamento-novo');
+  go('medicamento-novo');
 }
 function adicionarOutroRemedio(){
-  if(origemLeitura === 'caixa') go('caixa-camera');
-  else abrirMedicamentoNovo();
-}
-
-/* --- Fluxo Caixa: confirma leitura (OCR) --- */
-function toggleSemIntervaloConf(){
-  const semIntervalo = document.getElementById('confSemIntervalo').checked;
-  document.getElementById('blocoIntervaloConf').style.display = semIntervalo ? 'none' : 'block';
-  document.getElementById('blocoHorariosDiaConf').style.display = semIntervalo ? 'block' : 'none';
-}
-function abrirConfirmarLeitura(ok){
-  document.getElementById('textoOcrBruto').textContent = ocrTextoAtual || 'Não consegui reconhecer nenhum texto nesta foto. Digite as informações manualmente abaixo.';
-  document.getElementById('avisoOcr').textContent = !ok
-    ? '⚠️ Não consegui ler automaticamente. Confira e preencha os campos com atenção antes de continuar.'
-    : '✅ Confira se está tudo certo antes de continuar — corrija qualquer campo se precisar.';
-  document.getElementById('confNome').value = currentMed.nome || '';
-  document.getElementById('confDose').value = currentMed.dose || '1 comprimido';
-  document.getElementById('confDias').value = currentMed.duracaoDias || '';
-  document.getElementById('erroConfLeitura').textContent = '';
-  // Por padrão começa no modo "intervalo em horas" (igual à tela de Adicionar Remédio).
-  // Só volta marcado como "sem horário fixo" se já havia períodos do dia escolhidos antes.
-  const semIntervalo = !currentMed.intervaloHoras && !!(currentMed.horarios && currentMed.horarios.length);
-  document.getElementById('confSemIntervalo').checked = semIntervalo;
-  document.getElementById('confIntervaloHoras').value = currentMed.intervaloHoras || '';
-  document.getElementById('confPrimeiraHora').value = currentMed.primeiroHorario ? currentMed.primeiroHorario.hora : '';
-  document.getElementById('confPrimeiroMinuto').value = currentMed.primeiroHorario ? currentMed.primeiroHorario.minuto : '';
-  chipsConfirmar = new Set(currentMed.horarios || []);
-  document.querySelectorAll('[data-pane="confirmar-leitura"] .toggle-chip').forEach(chip => {
-    chip.classList.toggle('on', chipsConfirmar.has(chip.getAttribute('data-chipc')));
-  });
-  toggleSemIntervaloConf();
-  go('confirmar-leitura');
-}
-function ouvirTextoOcr(){
-  falar(ocrTextoAtual ? ('Texto reconhecido: ' + ocrTextoAtual) : 'Não consegui reconhecer nenhum texto nesta foto.');
-}
-function toggleChipConf(el, valor){
-  el.classList.toggle('on');
-  if(chipsConfirmar.has(valor)) chipsConfirmar.delete(valor);
-  else chipsConfirmar.add(valor);
-}
-function atualizarCaixaResultado(){
-  document.getElementById('caixaResNome').textContent = currentMed.nome || 'Remédio';
-  document.getElementById('caixaResSub').textContent = currentMed.dose || 'Confirme a dose com a bula ou farmacêutico';
-}
-function confirmarLeitura(){
-  const nome = document.getElementById('confNome').value.trim() || 'Remédio';
-  const dose = document.getElementById('confDose').value.trim() || '1 comprimido';
-  const semIntervalo = document.getElementById('confSemIntervalo').checked;
-  const diasStr = document.getElementById('confDias').value.trim();
-  const dias = diasStr ? parseInt(diasStr, 10) : null;
-  const erroEl = document.getElementById('erroConfLeitura');
-
-  let intervaloHoras = null, horarios = [], horariosCalculados = null, primeiroHorario = null;
-
-  if(semIntervalo){
-    horarios = Array.from(chipsConfirmar);
-    if(!horarios.length){
-      const msg = 'Marque ao menos um período do dia: manhã, tarde ou noite.';
-      erroEl.textContent = '⚠️ ' + msg;
-      falar(msg);
-      return;
-    }
-  } else {
-    const intStr = document.getElementById('confIntervaloHoras').value.trim();
-    intervaloHoras = intStr ? parseInt(intStr, 10) : NaN;
-    if(!intStr || isNaN(intervaloHoras) || intervaloHoras < 1 || intervaloHoras > 24){
-      const msg = 'Digite de quantas em quantas horas o remédio deve ser tomado, ou marque a opção de não há horário fixo.';
-      erroEl.textContent = '⚠️ ' + msg;
-      falar(msg);
-      return;
-    }
-    const hStr = document.getElementById('confPrimeiraHora').value.trim();
-    const mStr = document.getElementById('confPrimeiroMinuto').value.trim();
-    if(hStr !== '' || mStr !== ''){
-      const hora = parseInt(hStr, 10), minuto = parseInt(mStr || '0', 10);
-      if(isNaN(hora) || hora < 0 || hora > 23 || isNaN(minuto) || minuto < 0 || minuto > 59){
-        const msg = 'A primeira dose precisa de uma hora de 0 a 23 e um minuto de 0 a 59 — ou deixe os dois em branco para registrar depois.';
-        erroEl.textContent = '⚠️ ' + msg;
-        falar(msg);
-        return;
-      }
-      primeiroHorario = { hora, minuto };
-      horariosCalculados = calcularHorariosCalculados(hora, minuto, { intervaloHoras });
-    }
-  }
-
-  erroEl.textContent = '';
-  currentMed = Object.assign({}, currentMed, {
-    nome, dose,
-    intervaloHoras, horarios, horariosCalculados, primeiroHorario,
-    duracaoDias: dias
-  });
-  atualizarCaixaResultado();
-  go('caixa-resultado');
+  abrirMedicamentoNovo();
 }
 
 async function onFotoReceita(){
@@ -1270,43 +1080,16 @@ function onQRReceita(){
   }, 700);
 }
 
-/* ---------- Fluxo Caixa ---------- */
-async function onFotoCaixa(){
-  const file = document.getElementById('fotoCaixa').files[0];
-  origemLeitura = 'caixa';
-  go('caixa-loading');
-  const r = await reconhecerTexto(file);
-  ocrTextoAtual = r.texto;
-  const guess = parseTextoCaixa(ocrTextoAtual);
-  currentMed = { nome: guess.nome, dose:'1 comprimido', horarios:[], origem:'Caixa do remédio (foto)', duracaoDias:null, medico:null };
-  abrirConfirmarLeitura(r.ok);
-}
-
 /* ---------- Modo Farmácia ---------- */
 function autorizarFarmacia(sim){
   if(sim){
     vindoDaFarmacia = true;
-    document.getElementById('btnAjustarFarmacia').style.display = 'flex';
-    falar('Autorizado. Vamos fotografar a caixa do remédio.');
-    go('caixa-camera');
+    falar('Autorizado. Vamos cadastrar o remédio — você pode anexar uma foto da caixa para ajudar o paciente a reconhecê-la.');
+    abrirMedicamentoNovo();
   } else {
     vindoDaFarmacia = false;
     go('pro-home');
   }
-}
-
-let chipsSelecionados = new Set();
-function toggleChip(el, valor){
-  el.classList.toggle('on');
-  if(chipsSelecionados.has(valor)) chipsSelecionados.delete(valor);
-  else chipsSelecionados.add(valor);
-}
-function salvarAjusteFarmacia(){
-  currentMed.dose = document.getElementById('inputDose').value || currentMed.dose;
-  currentMed.horarioTextoLivre = document.getElementById('inputHorarioTexto').value;
-  currentMed.horarios = Array.from(chipsSelecionados);
-  falar('Ajuste salvo. ' + currentMed.dose + '. ' + currentMed.horarioTextoLivre);
-  go('duracao-tratamento');
 }
 
 /* ---------- Duração / Calendário ---------- */
@@ -1447,7 +1230,7 @@ function atualizarRemedioEditado(medAtualizado, ics){
   localStorage.setItem('meusRemedios', JSON.stringify(lista));
   edicaoIndice = null;
   if(ics) baixarICS(ics, (medFinal.nome || 'remedio').replace(/\s+/g,'_') + '.ics');
-  falar(medFinal.nome + ' atualizado com sucesso.' + (ics ? ' Um novo lembrete de calendário foi baixado.' : ''));
+  falar(medFinal.nome + ' atualizado com sucesso.' + (ics ? ' Um novo lembrete de calendário foi gerado.' : ''));
   go('meus-remedios');
 }
 function confirmarDuracao(tipo){
@@ -1489,7 +1272,7 @@ function renderRemedios(){
   const lista = getRemedios();
   const container = document.getElementById('listaRemedios');
   if(!lista.length){
-    container.innerHTML = '<div class="empty-state">Você ainda não tem remédios salvos.<br>Fotografe uma receita ou uma caixa para começar.</div>';
+    container.innerHTML = '<div class="empty-state">Você ainda não tem remédios salvos.<br>Fotografe uma receita ou adicione um remédio para começar.</div>';
     return;
   }
   container.innerHTML = lista.map((r, i) => {
@@ -1509,7 +1292,10 @@ function renderRemedios(){
       ? '<div style="font-size:12px;color:var(--brand-dark);font-weight:700;margin-top:2px;">⏰ A cada '+r.intervaloHoras+' horas — toque no relógio para registrar o primeiro horário</div>' : '';
     const btnRegistrar = ((r.horarios && r.horarios.length) || r.intervaloHoras)
       ? '<button class="mini-listen" style="background:var(--accent);" onclick="pedirRegistroHorario('+i+')" aria-label="Registrar horário de '+r.nome+'">⏰</button>' : '';
+    const fotoThumb = r.foto
+      ? '<img src="'+r.foto+'" alt="Foto da caixa de '+r.nome+'" style="width:48px;height:48px;object-fit:cover;border-radius:12px;border:1px solid var(--line);flex-shrink:0;">' : '';
     return '<div class="list-item" style="align-items:flex-start;'+(concluido ? 'border-color:#f1d38a;background:#fffaf0;' : '')+'">' +
+      fotoThumb +
       '<div class="pictogram" style="width:48px;height:48px;font-size:22px;">'+emoji+'</div>' +
       '<div class="info"><div class="name">'+r.nome+'</div><div class="time">'+(r.dose||'')+' — '+(r.duracaoLabel||'')+'</div>'+horariosCalcTxt+intervaloTxt+orientacaoTxt+avisoConcluido+'</div>' +
       '<div style="display:flex;flex-direction:column;gap:8px;">' +
@@ -1593,7 +1379,7 @@ function salvarPrimeiroHorario(){
   const ics = gerarICSHorarios(r, horariosCalc, diasRestantes(r));
   baixarICS(ics, (r.nome || 'remedio').replace(/\s+/g,'_') + '_horarios.ics');
 
-  falar('Horário registrado. Próximos horários de ' + r.nome + ': ' + horariosCalc.join(', ') + '. Um novo lembrete de calendário foi baixado.');
+  falar('Horário registrado. Próximos horários de ' + r.nome + ': ' + horariosCalc.join(', ') + '. Um novo lembrete de calendário foi gerado.');
   indiceParaRegistrarHorario = null;
   go('meus-remedios');
 }
@@ -1614,8 +1400,11 @@ function renderCartaoSalvos(){
       : r.horarios && r.horarios.includes('noite') && !r.horarios.includes('manha') ? HORARIO_EMOJI.noite
       : r.horarios && r.horarios.length ? '☀️'
       : r.intervaloHoras ? '⏰' : '💊';
+    const fotoThumb = r.foto
+      ? '<img src="'+r.foto+'" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:10px;border:1px solid var(--line);flex-shrink:0;">' : '';
     return '<label class="list-item" style="cursor:pointer;">' +
       '<input type="checkbox" class="chk-cartao-salvo" data-idx="'+i+'" checked style="width:22px;height:22px;flex-shrink:0;">' +
+      fotoThumb +
       '<div class="pictogram" style="width:40px;height:40px;font-size:18px;">'+emoji+'</div>' +
       '<div class="info"><div class="name">'+r.nome+'</div><div class="time">'+(r.dose||'')+' — '+(r.duracaoLabel||'')+'</div></div>' +
     '</label>';
@@ -1718,16 +1507,18 @@ function gerarCartaoPreview(){
   }
   const linhas = [];
   todosItens.forEach(it => {
+    const fotoTag = it.foto
+      ? '<img src="'+it.foto+'" alt="Foto da caixa de '+it.nome+'" style="width:38px;height:38px;object-fit:cover;border-radius:9px;border:1px solid #ccc;vertical-align:middle;margin-right:2px;">' : '';
     if(it.horariosCalculados && it.horariosCalculados.length){
       it.horariosCalculados.forEach(hm => {
         const emoji = horarioParaEmoji(hm);
-        linhas.push('<div class="row"><span style="font-size:30px;">'+emoji+'</span><b>'+it.nome+'</b> '+doseVisual(it.dose)+' <b>('+hm+')</b></div>');
+        linhas.push('<div class="row"><span style="font-size:30px;">'+emoji+'</span>'+fotoTag+'<b>'+it.nome+'</b> '+doseVisual(it.dose)+' <b>('+hm+')</b></div>');
       });
     } else {
       const horarios = (it.horarios && it.horarios.length) ? it.horarios : ['manha'];
       horarios.forEach(h => {
         const emoji = HORARIO_EMOJI[h] || '💊';
-        linhas.push('<div class="row"><span style="font-size:30px;">'+emoji+'</span><b>'+it.nome+'</b> '+doseVisual(it.dose)+'</div>');
+        linhas.push('<div class="row"><span style="font-size:30px;">'+emoji+'</span>'+fotoTag+'<b>'+it.nome+'</b> '+doseVisual(it.dose)+'</div>');
       });
     }
   });
