@@ -242,7 +242,7 @@
       </button>
       <p class="med-sub" style="text-align:center;margin-top:-6px;">Para médicos, farmacêuticos e estudantes de saúde</p>
       <div class="footer-link" onclick="verTermos()">Termo de Uso e Privacidade</div>
-      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px;">Versão 2026.1.14</p>
+      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px;">Versão 2026.1.15</p>
     </div>
 
     <!-- TERMO DE USO -->
@@ -278,6 +278,10 @@
         <span class="emoji">▦</span> Ler QR Code (Receita Memed)
       </button>
       <p class="med-sub" style="text-align:center;margin-top:4px;">Se a receita foi feita pelo Memed, ler o QR Code é mais confiável — traz até o nome e o CRM do médico.</p>
+      <button class="big-btn outline" onclick="iniciarReceitaManual()">
+        <span class="emoji">⌨️</span> Adicionar Remédio Manualmente
+      </button>
+      <p class="med-sub" style="text-align:center;margin-top:4px;">Sem foto e sem QR Code — digite direto os dados do médico, do paciente e do remédio.</p>
       <div class="footer-link" onclick="go('home')">← Voltar</div>
     </div>
 
@@ -318,7 +322,7 @@
     <div class="pane" data-pane="receita-cabecalho">
       <div class="app-header"><h2>Dados da Receita</h2></div>
       <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
-      <div class="result-card">
+      <div class="result-card" id="cardTextoOcr">
         <p class="med-sub" style="margin:0 0 8px;"><b>Texto que reconheci na foto</b> (referência, não é lido em voz alta):</p>
         <div style="max-height:100px;overflow:auto;background:var(--bg);border-radius:12px;padding:10px;font-size:13px;color:var(--muted);white-space:pre-wrap;line-height:1.5;" id="textoOcrCabecalho">—</div>
       </div>
@@ -340,6 +344,24 @@
         <span class="emoji">✅</span> Continuar
       </button>
       <div class="footer-link" onclick="go('home')">← Início</div>
+    </div>
+
+    <!-- RECEITA: PACIENTE DIFERENTE? -->
+    <div class="pane" data-pane="paciente-diferente">
+      <div class="app-header"><h2>Continuar com o mesmo paciente?</h2></div>
+      <div class="speak-badge">🔊 lendo em voz alta automaticamente</div>
+      <div class="result-card">
+        <p class="med-sub" style="margin:0;">Este aparelho já tem remédios salvos para <b id="nomePacienteAnterior">—</b>. Agora você está cadastrando para <b id="nomePacienteNovo">—</b>.</p>
+      </div>
+      <button class="big-btn primary" onclick="confirmarPacienteDiferente(true)">
+        <span class="emoji">🆕</span> É uma pessoa diferente
+      </button>
+      <p class="med-sub" style="text-align:center;margin-top:-8px;">Começa uma lista nova — os remédios salvos antes continuam guardados, só não aparecem mais junto com os deste paciente.</p>
+      <button class="big-btn secondary" onclick="confirmarPacienteDiferente(false)">
+        <span class="emoji">🔁</span> É a mesma pessoa
+      </button>
+      <p class="med-sub" style="text-align:center;margin-top:-8px;">Continua na mesma lista de remédios já salva (só o nome digitado era diferente).</p>
+      <div class="footer-link" onclick="go('receita-cabecalho')">← Corrigir o nome</div>
     </div>
 
     <!-- RECEITA: ORIENTAÇÕES ADICIONAIS -->
@@ -498,6 +520,7 @@
     <!-- MEUS REMEDIOS -->
     <div class="pane" data-pane="meus-remedios">
       <div class="app-header"><h2>Meus Remédios</h2></div>
+      <p class="med-sub" id="pacienteAtualSubtitulo" style="text-align:center;margin-top:-8px;display:none;"></p>
       <div id="listaRemedios"></div>
       <div class="footer-link" onclick="go('home')">← Início</div>
     </div>
@@ -761,7 +784,7 @@ function paneText(id){
     case 'termos':
       return 'Antes de começar. Este aplicativo é gratuito e ajuda você a entender o nome, a dose e o horário dos seus remédios, usando voz. Seus dados ficam guardados só no seu celular, nada é enviado para a internet nem guardado em nenhum servidor. Este aplicativo não substitui o médico ou o farmacêutico, e não tem responsabilidade sobre a receita ou sobre o remédio que você toma. Siga sempre a orientação do seu médico. Toque em entendi e aceito para continuar.';
     case 'receita-metodo':
-      return 'Como está sua receita? Toque em fotografar papel impresso, ou ler QR code de receita Memed.';
+      return 'Como está sua receita? Toque em fotografar papel impresso, ler QR code de receita Memed, ou adicionar remédio manualmente.';
     case 'receita-camera':
       return 'Aponte a câmera para a receita e toque no quadro escuro para tirar a foto.';
     case 'receita-qr':
@@ -769,6 +792,9 @@ function paneText(id){
     case 'receita-loading':
       return 'Um momento, estou lendo o texto da receita. Isso pode levar alguns segundos.';
     case 'receita-cabecalho': {
+      if(origemLeitura === 'manual'){
+        return 'Digite o nome completo do médico e do paciente, e toque em continuar.';
+      }
       const partes = [];
       if(receitaContexto.medico && receitaContexto.medico.nome) partes.push('médico ' + receitaContexto.medico.nome);
       if(receitaContexto.medico && receitaContexto.medico.crm) partes.push('C R M ' + receitaContexto.medico.crm);
@@ -778,6 +804,8 @@ function paneText(id){
       fala += ' Confira e corrija os campos se precisar, e toque em continuar.';
       return fala;
     }
+    case 'paciente-diferente':
+      return 'Este aparelho já tem remédios salvos para ' + (getPacienteAtualNome() || 'outra pessoa') + '. Agora você está cadastrando para ' + (receitaContexto.paciente || 'um novo paciente') + '. São a mesma pessoa, ou pessoas diferentes? Toque numa das opções.';
     case 'receita-orientacoes':
       return 'Se o médico deu alguma orientação além dos remédios, como evitar bebida alcoólica, digite aqui. Se não tiver nenhuma, pode deixar em branco e tocar em continuar.';
     case 'medicamento-novo':
@@ -817,7 +845,7 @@ function paneText(id){
 
 /* ---------- OCR real (Tesseract.js) ---------- */
 let ocrTextoAtual = '';
-let origemLeitura = 'receita'; // 'receita' | 'qr'
+let origemLeitura = 'receita'; // 'receita' | 'qr' | 'manual'
 
 async function reconhecerTexto(file){
   if(!file || typeof Tesseract === 'undefined'){
@@ -873,12 +901,24 @@ let receitaContexto = { paciente:'', medico:null, especialidade:'', orientacoes:
 let chipsMedNovo = new Set();
 
 function abrirReceitaCabecalho(){
-  document.getElementById('textoOcrCabecalho').textContent = ocrTextoAtual || 'Não consegui reconhecer nenhum texto nesta foto. Preencha os dados manualmente abaixo.';
+  const cardOcr = document.getElementById('cardTextoOcr');
+  if(origemLeitura === 'manual'){
+    if(cardOcr) cardOcr.style.display = 'none';
+  } else {
+    if(cardOcr) cardOcr.style.display = '';
+    document.getElementById('textoOcrCabecalho').textContent = ocrTextoAtual || 'Não consegui reconhecer nenhum texto nesta foto. Preencha os dados manualmente abaixo.';
+  }
   document.getElementById('confPaciente').value = receitaContexto.paciente || '';
   document.getElementById('confMedicoNome').value = receitaContexto.medico ? (receitaContexto.medico.nome||'') : '';
   document.getElementById('confMedicoCrm').value = receitaContexto.medico ? (receitaContexto.medico.crm||'') : '';
   document.getElementById('confEspecialidade').value = receitaContexto.especialidade || '';
   go('receita-cabecalho');
+}
+function iniciarReceitaManual(){
+  origemLeitura = 'manual';
+  ocrTextoAtual = '';
+  receitaContexto = { paciente:'', medico:null, especialidade:'', orientacoes:'' };
+  abrirReceitaCabecalho();
 }
 function nomeCompletoValido(nome){
   const partes = (nome || '').trim().split(/\s+/).filter(Boolean);
@@ -908,6 +948,28 @@ function confirmarCabecalho(){
   receitaContexto.paciente = paciente;
   receitaContexto.medico = medicoNome ? { nome:medicoNome, crm:medicoCrm, especialidade } : null;
   receitaContexto.especialidade = especialidade;
+
+  // Se este aparelho já tem uma lista de remédios de OUTRA pessoa, confirma antes de continuar
+  // — evita que remédios de um paciente anterior apareçam misturados com os de um novo paciente.
+  const nomePacienteAtual = getPacienteAtualNome();
+  if(nomePacienteAtual && getRemedios().length && normalizarNome(nomePacienteAtual) !== normalizarNome(paciente)){
+    document.getElementById('nomePacienteAnterior').textContent = nomePacienteAtual;
+    document.getElementById('nomePacienteNovo').textContent = paciente;
+    go('paciente-diferente');
+    return;
+  }
+  setPacienteAtual(paciente);
+  document.getElementById('orientacoesTexto').value = receitaContexto.orientacoes || '';
+  go('receita-orientacoes');
+}
+function confirmarPacienteDiferente(pessoaDiferente){
+  if(pessoaDiferente){
+    setPacienteAtual(receitaContexto.paciente);
+    falar('Certo. Começando uma lista separada para ' + receitaContexto.paciente + '. Os remédios salvos antes continuam guardados, só não aparecem mais aqui.');
+  } else {
+    localStorage.setItem(PACIENTE_ATUAL_NOME_KEY, receitaContexto.paciente || '');
+    falar('Certo, mantendo a lista de remédios já salva.');
+  }
   document.getElementById('orientacoesTexto').value = receitaContexto.orientacoes || '';
   go('receita-orientacoes');
 }
@@ -1067,7 +1129,7 @@ function salvarMedicamentoNovo(){
   currentMed = {
     nome, dose,
     intervaloHoras, horarios, horariosCalculados, primeiroHorario,
-    origem: origemLeitura === 'qr' ? 'QR Code (Receita Memed)' : 'Receita (foto)',
+    origem: origemLeitura === 'qr' ? 'QR Code (Receita Memed)' : origemLeitura === 'manual' ? 'Entrada manual' : 'Receita (foto)',
     duracaoDias: dias,
     medico: receitaContexto.medico || null,
     paciente: receitaContexto.paciente || '',
@@ -1227,13 +1289,52 @@ async function baixarICS(conteudo, nomeArquivo){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
+/* ---------- Perfil do paciente (várias pessoas no mesmo aparelho) ---------- */
+// Enquanto nenhum paciente for nomeado (uso normal, uma pessoa só usando o próprio
+// celular), tudo fica na "lista antiga" (chave 'meusRemedios'), sem nenhuma mudança
+// de comportamento. Assim que um nome de paciente é confirmado (fluxo de receita),
+// a lista atual passa a ficar guardada numa "gaveta" própria daquele nome — e se depois
+// outro nome diferente for confirmado, uma gaveta nova (vazia) é usada, sem misturar
+// os remédios de uma pessoa com os da outra. Nada é apagado: a gaveta antiga continua
+// guardada, e volta a aparecer se o mesmo nome for usado de novo.
+const LEGADO_REMEDIOS_KEY = 'meusRemedios';
+const PACIENTE_ATUAL_CHAVE_KEY = 'drRemedioPacienteAtualChave';
+const PACIENTE_ATUAL_NOME_KEY = 'drRemedioPacienteAtualNome';
+function normalizarNome(nome){
+  return (nome || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
+}
+function getPacienteAtualNome(){
+  return localStorage.getItem(PACIENTE_ATUAL_NOME_KEY) || '';
+}
+function chaveRemediosStorage(){
+  const chave = localStorage.getItem(PACIENTE_ATUAL_CHAVE_KEY) || '';
+  return chave ? ('remedios::' + chave) : LEGADO_REMEDIOS_KEY;
+}
+function setPacienteAtual(nomeExibicao){
+  const chaveAntiga = localStorage.getItem(PACIENTE_ATUAL_CHAVE_KEY) || '';
+  const chaveNova = normalizarNome(nomeExibicao);
+  if(!chaveNova) return;
+  if(!chaveAntiga && chaveNova){
+    // Primeiro nome de paciente confirmado neste aparelho: a lista antiga (sem nome)
+    // passa a ser a gaveta deste paciente, em vez de começar vazia do nada.
+    const listaLegado = localStorage.getItem(LEGADO_REMEDIOS_KEY);
+    if(listaLegado !== null && localStorage.getItem('remedios::' + chaveNova) === null){
+      localStorage.setItem('remedios::' + chaveNova, listaLegado);
+    }
+  }
+  localStorage.setItem(PACIENTE_ATUAL_CHAVE_KEY, chaveNova);
+  localStorage.setItem(PACIENTE_ATUAL_NOME_KEY, nomeExibicao || '');
+}
+function salvarListaRemedios(lista){
+  localStorage.setItem(chaveRemediosStorage(), JSON.stringify(lista));
+}
 function salvarRemedio(med){
   const lista = getRemedios();
   lista.push(med);
-  localStorage.setItem('meusRemedios', JSON.stringify(lista));
+  salvarListaRemedios(lista);
 }
 function getRemedios(){
-  try { return JSON.parse(localStorage.getItem('meusRemedios') || '[]'); }
+  try { return JSON.parse(localStorage.getItem(chaveRemediosStorage()) || '[]'); }
   catch(e){ return []; }
 }
 
@@ -1255,7 +1356,7 @@ function atualizarRemedioEditado(medAtualizado, ics){
   const original = lista[edicaoIndice] || {};
   const medFinal = Object.assign({}, original, medAtualizado, { criadoEm: original.criadoEm || medAtualizado.criadoEm });
   lista[edicaoIndice] = medFinal;
-  localStorage.setItem('meusRemedios', JSON.stringify(lista));
+  salvarListaRemedios(lista);
   edicaoIndice = null;
   if(ics) baixarICS(ics, (medFinal.nome || 'remedio').replace(/\s+/g,'_') + '.ics');
   falar(medFinal.nome + ' atualizado com sucesso.' + (ics ? ' Um novo lembrete de calendário foi gerado.' : ''));
@@ -1299,6 +1400,12 @@ function confirmarDuracao(tipo){
 function renderRemedios(){
   const lista = getRemedios();
   const container = document.getElementById('listaRemedios');
+  const subEl = document.getElementById('pacienteAtualSubtitulo');
+  const nomeAtual = getPacienteAtualNome();
+  if(subEl){
+    if(nomeAtual){ subEl.textContent = '📋 ' + nomeAtual; subEl.style.display = 'block'; }
+    else { subEl.style.display = 'none'; }
+  }
   if(!lista.length){
     container.innerHTML = '<div class="empty-state">Você ainda não tem remédios salvos.<br>Fotografe uma receita ou adicione um remédio para começar.</div>';
     return;
@@ -1364,7 +1471,7 @@ function confirmarExclusao(){
   const lista = getRemedios();
   const removido = lista[indiceParaExcluir];
   lista.splice(indiceParaExcluir, 1);
-  localStorage.setItem('meusRemedios', JSON.stringify(lista));
+  salvarListaRemedios(lista);
   indiceParaExcluir = null;
   falar((removido ? removido.nome + ' excluído.' : 'Excluído.') + ' Voltando para Meus Remédios.');
   go('meus-remedios');
@@ -1402,7 +1509,7 @@ function salvarPrimeiroHorario(){
   });
   r.primeiroHorario = { hora, minuto };
   r.horariosCalculados = horariosCalc;
-  localStorage.setItem('meusRemedios', JSON.stringify(lista));
+  salvarListaRemedios(lista);
 
   const ics = gerarICSHorarios(r, horariosCalc, diasRestantes(r));
   baixarICS(ics, (r.nome || 'remedio').replace(/\s+/g,'_') + '_horarios.ics');

@@ -1,4 +1,4 @@
-const CACHE_NAME = "dr-remedio-2026.1.14";
+const CACHE_NAME = "dr-remedio-2026.1.15";
 const ASSETS = [
   "./",
   "./index.html",
